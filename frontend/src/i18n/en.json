@@ -1,0 +1,32 @@
+{
+    "app": {
+        "title": "Voice to Matter",
+        "subtitle": "Say what you want — the printer will make it!"
+    },
+    "voice": {
+        "idle": "Press and say what you want to print",
+        "listening": "Listening...",
+        "processing": "Creating 3D model...",
+        "slicing": "Preparing for print...",
+        "printing": "Printing!",
+        "done": "Done! 🎉"
+    },
+    "buttons": {
+        "speak": "🎤 Speak!",
+        "print": "🖨️ Print!",
+        "connect": "🔌 Connect Printer",
+        "disconnect": "❌ Disconnect"
+    },
+    "printer": {
+        "notConnected": "Printer not connected",
+        "connected": "Printer connected",
+        "connecting": "Connecting...",
+        "selectPort": "Select printer port"
+    },
+    "errors": {
+        "noMic": "Can't hear you. Check your microphone!",
+        "noModel": "Couldn't create model. Try again!",
+        "noPrinter": "Connect the printer first!",
+        "printFailed": "Oops, something went wrong. Try again?"
+    }
+}
