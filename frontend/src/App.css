@@ -20,6 +20,11 @@ body {
   min-height: 100vh;
   background: var(--background);
   color: white;
+  /* Reset Vite default centering */
+  display: block;
+  width: 100%;
+  overflow-x: hidden;
+  position: relative;
 }
 
 /* App container */

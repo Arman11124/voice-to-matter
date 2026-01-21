@@ -5,22 +5,23 @@
 
 const SAFETY_MODIFIERS = [
     'solid thick walls',
-    // 'flat bottom for 3D printing', // Removed: turns trees into cylinders
     'minimal overhangs',
-    'simple smooth geometry',
-    // 'chunky proportions', // Removed: turns everything into cubes
+    // 'simple smooth geometry', // Removed: causes blocky shapes
+    'organic sculpted forms', // NEW
     'no thin fragile parts',
-    'toy style',
-    'cute cartoon aesthetic'
+    'figurine style', // Changed from "toy style" (too simple)
+    'character design aesthetic' // Changed from "cartoon"
 ];
 
 const STYLE_MODIFIERS = [
-    'colorful', // Added to force color
-    'vibrant colors', // Added to force color
-    'high quality texture', // Added to force color
+    'colorful',
+    'vibrant colors',
+    'high quality texture',
     '3D printable model',
     'single piece design',
-    'smooth surfaces'
+    'smooth surfaces',
+    'high fidelity', // NEW
+    'detailed'      // NEW
 ];
 
 // Command words to remove
