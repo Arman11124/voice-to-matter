@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 
-// Cloudflare Tunnel HTTPS proxy to VPS backend
-const API_BASE = 'https://johnston-arbitration-maiden-capacity.trycloudflare.com';
+// Cloudflare Tunnel HTTPS proxy to VPS backend (PM2 managed)
+const API_BASE = 'https://frederick-weights-wider-triangle.trycloudflare.com';
 
 export type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
 
