@@ -11,10 +11,10 @@ import { KOBRA_2_PRO_PROFILE } from './printerProfiles';
 
 const LAYER_HEIGHT = 0.2;
 const WALL_THICKNESS = 0.4; // Nozzle size
-const INFILL_DENSITY = 0.15; // 15%
+// const INFILL_DENSITY = 0.15; // Unused in Vase Mode V1
 const TRAVEL_SPEED = 6000;
-const PRINT_SPEED = 3000;
-const OUTER_WALL_SPEED = 1500;
+const PRINT_SPEED = 3000; // 50mm/s
+// const OUTER_WALL_SPEED = 1500; // Unused, using flat speed for robustness
 
 export async function sliceModelReal(modelUrl: string, onProgress: (percent: number) => void): Promise<string> {
     onProgress(5);
