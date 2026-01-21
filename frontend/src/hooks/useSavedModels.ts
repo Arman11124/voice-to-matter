@@ -12,12 +12,13 @@ const STORAGE_KEY = 'voice-to-matter-saved-models';
 
 interface UseSavedModelsReturn {
     models: SavedModel[];
-    saveModel: (prompt: string, modelUrl: string, thumbnail?: string) => void;
+    saveModel: (prompt: string, modelUrl: string, thumbnail?: string, id?: string, createdAt?: number) => void;
     deleteModel: (id: string) => void;
     clearAll: () => void;
 }
 
 export function useSavedModels(): UseSavedModelsReturn {
+    // ... (state init unchanged) ...
     const [models, setModels] = useState<SavedModel[]>(() => {
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
@@ -28,7 +29,7 @@ export function useSavedModels(): UseSavedModelsReturn {
         }
     });
 
-    // Save to localStorage whenever models change
+    // ... (useEffect unchanged) ...
     useEffect(() => {
         try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(models));
@@ -37,16 +38,22 @@ export function useSavedModels(): UseSavedModelsReturn {
         }
     }, [models]);
 
-    const saveModel = useCallback((prompt: string, modelUrl: string, thumbnail?: string) => {
+    const saveModel = useCallback((prompt: string, modelUrl: string, thumbnail?: string, id?: string, createdAt?: number) => {
         const newModel: SavedModel = {
-            id: Date.now().toString(),
+            id: id || Date.now().toString(),
             prompt,
             modelUrl,
             thumbnail,
-            createdAt: Date.now()
+            createdAt: createdAt || Date.now()
         };
 
-        setModels(prev => [newModel, ...prev].slice(0, 20)); // Keep max 20 models
+        setModels(prev => {
+            // Check for duplicates if ID is provided
+            if (id && prev.some(m => m.id === id)) {
+                return prev;
+            }
+            return [newModel, ...prev].slice(0, 20); // Keep max 20 models
+        });
         console.log('💾 Model saved:', prompt);
     }, []);
 

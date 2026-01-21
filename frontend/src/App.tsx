@@ -319,8 +319,9 @@ function App() {
           if (models && models.length > 0) {
             // Merge with local models
             models.forEach(m => {
+              // Deduplication is now handled inside saveModel too, but explicit check is fine
               if (!savedModels.models.find(existing => existing.id === m.id)) {
-                savedModels.saveModel(m.prompt, m.modelUrl, m.thumbnail);
+                savedModels.saveModel(m.prompt, m.modelUrl, m.thumbnail, m.id, m.createdAt);
               }
             });
             setShowPinModal(false);
