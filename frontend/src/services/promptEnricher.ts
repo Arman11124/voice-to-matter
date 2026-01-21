@@ -37,8 +37,9 @@ const SKIP_WORDS = new Set([
 const RU_TO_EN: Record<string, string> = {
     // --- ACTIONS/MODIFIERS (ДЕЙСТВИЯ) ---
     'дорисуй': 'add', 'добав': 'add', 'приделай': 'add',
+    'нарису': 'add', 'прирису': 'add', 'трас': 'add', // "трасу" -> "add"
     'с': 'with', 'со': 'with', 'без': 'without',
-    'ему': '', 'ей': '', 'им': '', // pronouns to ignore
+    'ему': 'with', 'ей': 'with', 'им': 'with', // pronouns -> "with" helps "add with wings" logic
 
     // --- ANIMALS (ЖИВОТНЫЕ) ---
     'кош': 'cat', 'кот': 'cat', 'кис': 'cat',
