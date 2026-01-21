@@ -5,10 +5,10 @@
 
 const SAFETY_MODIFIERS = [
     'solid thick walls',
-    'flat bottom for 3D printing',
+    // 'flat bottom for 3D printing', // Removed: turns trees into cylinders
     'minimal overhangs',
-    'simple smooth geometry', // Removed "low-poly" to allow better textures
-    'chunky proportions',
+    'simple smooth geometry',
+    // 'chunky proportions', // Removed: turns everything into cubes
     'no thin fragile parts',
     'toy style',
     'cute cartoon aesthetic'

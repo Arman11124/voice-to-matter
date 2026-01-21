@@ -381,7 +381,17 @@ function App() {
             const estimate = estimatePrint(placeholderGcode);
             setPrintEstimate({ minutes: estimate.estimatedMinutes, layers: estimate.layers });
           }}
-          onDelete={(id) => savedModels.deleteModel(id)}
+          onDelete={(id) => {
+            // 1. Delete locally
+            savedModels.deleteModel(id);
+
+            // 2. Force Sync to Cloud immediately (to prevent "Ghost Resurrection" on next pull)
+            // We filter manually here because state update is async
+            const remainingModels = savedModels.models.filter(m => m.id !== id);
+            if (cloudSync.pin) {
+              cloudSync.syncToCloud(remainingModels);
+            }
+          }}
         />
       </main>
 
