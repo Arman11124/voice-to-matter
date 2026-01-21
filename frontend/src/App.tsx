@@ -18,7 +18,7 @@ import type { SavedModel } from './hooks/useSavedModels';
 import { useSlicer } from './hooks/useSlicer'; // NEW: Slicer hook
 
 import { enrichPrompt } from './services/promptEnricher';
-import { wrapGcode, estimatePrint } from './services/gcodeGenerator';
+import { estimatePrint } from './services/gcodeGenerator';
 
 // Pipeline states
 type AppState = 'idle' | 'listening' | 'generating' | 'ready' | 'slicing' | 'printing' | 'done';
