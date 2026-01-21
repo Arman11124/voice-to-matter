@@ -107,4 +107,41 @@ router.get('/status/:taskId', async (req: Request, res: Response) => {
     }
 });
 
+// Proxy model download to avoid CORS issues
+router.get('/model-proxy', async (req: Request, res: Response) => {
+    try {
+        const { url } = req.query;
+
+        if (!url || typeof url !== 'string') {
+            res.status(400).json({ error: 'URL parameter is required' });
+            return;
+        }
+
+        console.log('📦 Proxying model from:', url.substring(0, 80) + '...');
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            res.status(response.status).json({ error: 'Failed to fetch model' });
+            return;
+        }
+
+        // Get the content as array buffer
+        const buffer = await response.arrayBuffer();
+
+        // Set CORS and content type headers
+        res.set({
+            'Content-Type': 'model/gltf-binary',
+            'Access-Control-Allow-Origin': '*',
+            'Cache-Control': 'public, max-age=3600'
+        });
+
+        res.send(Buffer.from(buffer));
+
+    } catch (error) {
+        console.error('Model proxy error:', error);
+        res.status(500).json({ error: 'Failed to proxy model' });
+    }
+});
+
 export default router;

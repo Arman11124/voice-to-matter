@@ -81,14 +81,18 @@ export function useTripoAI(): UseTripoAIReturn {
             console.log('📋 Task created:', taskId);
 
             // Step 2: Poll for completion
-            const url = await pollStatus(taskId);
+            const originalUrl = await pollStatus(taskId);
 
-            console.log('✅ Model ready:', url);
-            setModelUrl(url);
+            // Use proxy to avoid CORS issues with model-viewer
+            const proxiedUrl = `${API_BASE}/api/model-proxy?url=${encodeURIComponent(originalUrl)}`;
+
+            console.log('✅ Model ready:', originalUrl);
+            console.log('🔄 Using proxied URL:', proxiedUrl);
+            setModelUrl(proxiedUrl);
             setStatus('success');
             setProgress(100);
 
-            return url;
+            return proxiedUrl;
 
         } catch (e) {
             console.error('Generation error:', e);
