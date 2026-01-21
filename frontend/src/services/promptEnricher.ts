@@ -20,19 +20,31 @@ const STYLE_MODIFIERS = [
     'smooth surfaces'
 ];
 
-// Words to remove (command words that aren't objects)
-const SKIP_WORDS = [
-    /\b(нарисуй|сделай|хочу|создай|покажи|напечатай|пожалуйста|мне|а)\b/gi,
-    /\b(draw|make|want|create|show|print|please|me|a|an|the)\b/gi,
+// Command words to remove (not objects) - using explicit patterns without \b
+// because \b doesn't work with Cyrillic in JavaScript
+const SKIP_WORDS_RU = [
+    'нарисуй', 'сделай', 'хочу', 'создай', 'покажи',
+    'напечатай', 'пожалуйста', 'мне', 'можешь'
+];
+
+const SKIP_WORDS_EN = [
+    'draw', 'make', 'want', 'create', 'show',
+    'print', 'please', 'me', 'can', 'you'
 ];
 
 export function enrichPrompt(rawInput: string): string {
     // Normalize input
     let prompt = rawInput.toLowerCase().trim();
 
-    // Remove command words
-    for (const pattern of SKIP_WORDS) {
-        prompt = prompt.replace(pattern, '');
+    // Remove Russian command words
+    for (const word of SKIP_WORDS_RU) {
+        // Use space or start/end as word boundaries
+        prompt = prompt.replace(new RegExp(`(^|\\s)${word}(\\s|$)`, 'gi'), ' ');
+    }
+
+    // Remove English command words
+    for (const word of SKIP_WORDS_EN) {
+        prompt = prompt.replace(new RegExp(`\\b${word}\\b`, 'gi'), '');
     }
 
     // Clean up extra spaces
