@@ -203,17 +203,7 @@ function App() {
     setIsRefineMode(false);
   }, [speech, tripo, currentPrompt, isRefineMode, captureScreenshot]);
 
-  // Handle print
-  const handlePrint = useCallback(async () => {
-    if (!gcode || serial.status !== 'connected') return;
 
-    setAppState('printing');
-
-    const fullGcode = wrapGcode(gcode);
-    await serial.print(fullGcode);
-
-    setAppState('done');
-  }, [gcode, serial]);
 
   // Toggle language
   const toggleLanguage = () => {
