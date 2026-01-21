@@ -95,6 +95,7 @@ function App() {
     if (!cloudSync.pin) return;
     const intervalId = setInterval(async () => {
       try {
+        console.log(`💓 Polling cloud for PIN ${cloudSync.pin}...`);
         const remoteModels = await cloudSync.loadFromCloud();
         if (remoteModels) {
           let hasNew = false;
@@ -104,8 +105,11 @@ function App() {
               hasNew = true;
             }
           });
-          // Only log if we actually found something new to avoid console spam
-          if (hasNew) console.log('🔄 Auto-pulled new models from cloud');
+          if (hasNew) {
+            console.log('✅ Auto-pulled new models from cloud');
+          } else {
+            console.log('💤 No new models in cloud');
+          }
         }
       } catch (e) {
         console.error("Polling error", e);
@@ -113,7 +117,7 @@ function App() {
     }, 10000); // 10 seconds
     return () => clearInterval(intervalId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cloudSync.pin, cloudSync.loadFromCloud]); // Don't depend on savedModels to avoid reset loops
+  }, [cloudSync.pin, cloudSync.loadFromCloud]);
 
   // Capture screenshot from model-viewer
   const captureScreenshot = useCallback(async (): Promise<string | null> => {
