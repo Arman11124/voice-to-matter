@@ -7,8 +7,8 @@ interface PinModalProps {
     onSetPin: (pin: string) => void;
     onClearPin: () => void;
     onClose: () => void;
-    onSync: () => void;
-    onRestore: () => void;
+    onSync: (pinOverride?: string) => void;
+    onRestore: (pinOverride?: string) => void;
     isLoading: boolean;
     error: string | null;
     checkPinExists: (pin: string) => Promise<boolean>;
@@ -43,10 +43,10 @@ export function PinModal({
                     return;
                 }
                 onSetPin(inputPin);
-                onSync();
+                onSync(inputPin);
             } else {
                 onSetPin(inputPin);
-                onRestore();
+                onRestore(inputPin);
             }
             setInputPin('');
         }
@@ -68,7 +68,7 @@ export function PinModal({
                         <div className="pin-actions">
                             <button
                                 className="pin-btn sync-btn"
-                                onClick={onSync}
+                                onClick={() => onSync()}
                                 disabled={isLoading}
                             >
                                 {isLoading ? '⏳' : '☁️'} Обновить копию
@@ -130,6 +130,6 @@ export function PinModal({
 
                 {(error || localError) && <div className="pin-error">{localError || error}</div>}
             </div>
-        </div>
+        </div >
     );
 }

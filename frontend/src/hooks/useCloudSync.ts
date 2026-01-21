@@ -54,8 +54,9 @@ export function useCloudSync(): UseCloudSyncReturn {
         }
     }, []);
 
-    const syncToCloud = useCallback(async (models: SavedModel[]): Promise<boolean> => {
-        if (!pin) {
+    const syncToCloud = useCallback(async (models: SavedModel[], pinOverride?: string): Promise<boolean> => {
+        const activePin = pinOverride || pin;
+        if (!activePin) {
             setError('PIN не установлен');
             return false;
         }
@@ -64,7 +65,7 @@ export function useCloudSync(): UseCloudSyncReturn {
         setError(null);
 
         try {
-            const response = await fetch(`${API_BASE}/api/sync/${pin}`, {
+            const response = await fetch(`${API_BASE}/api/sync/${activePin}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ models })
@@ -90,8 +91,9 @@ export function useCloudSync(): UseCloudSyncReturn {
         }
     }, [pin]);
 
-    const loadFromCloud = useCallback(async (): Promise<SavedModel[] | null> => {
-        if (!pin) {
+    const loadFromCloud = useCallback(async (pinOverride?: string): Promise<SavedModel[] | null> => {
+        const activePin = pinOverride || pin;
+        if (!activePin) {
             setError('PIN не установлен');
             return null;
         }
@@ -100,7 +102,7 @@ export function useCloudSync(): UseCloudSyncReturn {
         setError(null);
 
         try {
-            const response = await fetch(`${API_BASE}/api/sync/${pin}`);
+            const response = await fetch(`${API_BASE}/api/sync/${activePin}`);
             const data = await response.json();
 
             if (!response.ok) {

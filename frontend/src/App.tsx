@@ -328,14 +328,14 @@ function App() {
         onClearPin={cloudSync.clearPin}
         checkPinExists={cloudSync.checkPinExists}
         onClose={() => setShowPinModal(false)}
-        onSync={async () => {
-          const success = await cloudSync.syncToCloud(savedModels.models);
+        onSync={async (pinOverride) => {
+          const success = await cloudSync.syncToCloud(savedModels.models, pinOverride);
           if (success) {
             setShowPinModal(false);
           }
         }}
-        onRestore={async () => {
-          const models = await cloudSync.loadFromCloud();
+        onRestore={async (pinOverride) => {
+          const models = await cloudSync.loadFromCloud(pinOverride);
           if (models && models.length > 0) {
             // Merge with local models
             models.forEach(m => {
