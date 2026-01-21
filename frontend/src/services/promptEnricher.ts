@@ -1,6 +1,7 @@
 /**
  * Enriches child's simple prompt with 3D printing-safe modifiers
- * Now works with ANY language - Tripo AI understands Russian, English, and more!
+ * Passes Russian text directly to Tripo AI (it understands Russian!)
+ * Only removes command words like "нарисуй", "сделай"
  */
 
 const SAFETY_MODIFIERS = [
@@ -20,55 +21,47 @@ const STYLE_MODIFIERS = [
     'smooth surfaces'
 ];
 
-// Command words to remove (not objects) - using explicit patterns without \b
-// because \b doesn't work with Cyrillic in JavaScript
-const SKIP_WORDS_RU = [
+// Command words to remove (not objects) - these are just prefixes
+const SKIP_WORDS = new Set([
+    // Russian
     'нарисуй', 'сделай', 'хочу', 'создай', 'покажи',
-    'напечатай', 'пожалуйста', 'мне', 'можешь'
-];
-
-const SKIP_WORDS_EN = [
+    'напечатай', 'пожалуйста', 'мне', 'можешь', 'давай',
+    'пусть', 'будет', 'теперь', 'ещё', 'еще',
+    // English
     'draw', 'make', 'want', 'create', 'show',
-    'print', 'please', 'me', 'can', 'you'
-];
+    'print', 'please', 'me', 'can', 'you', 'a', 'an', 'the'
+]);
 
 export function enrichPrompt(rawInput: string): string {
-    // Normalize input
-    let prompt = rawInput.toLowerCase().trim();
+    // Step 1: Normalize
+    const input = rawInput.toLowerCase().trim();
 
-    // Remove Russian command words
-    for (const word of SKIP_WORDS_RU) {
-        // Use space or start/end as word boundaries
-        prompt = prompt.replace(new RegExp(`(^|\\s)${word}(\\s|$)`, 'gi'), ' ');
-    }
+    // Step 2: Split by whitespace and filter out command words
+    const words = input.split(/\s+/).filter(word => {
+        // Keep word if it's NOT in skip list
+        return !SKIP_WORDS.has(word);
+    });
 
-    // Remove English command words
-    for (const word of SKIP_WORDS_EN) {
-        prompt = prompt.replace(new RegExp(`\\b${word}\\b`, 'gi'), '');
-    }
+    // Step 3: Join back
+    let prompt = words.join(' ').trim();
 
-    // Clean up extra spaces
-    prompt = prompt.replace(/\s+/g, ' ').trim();
-
-    // If prompt is empty after cleanup, use default
+    // If nothing left, use default
     if (!prompt) {
         prompt = 'cute toy';
     }
 
-    // Build enhanced prompt - keep original language, AI understands it!
+    // Step 4: Build enhanced prompt with 3D printing modifiers
     const safetyMods = SAFETY_MODIFIERS.join(', ');
     const styleMods = STYLE_MODIFIERS.join(', ');
 
-    // Add "cute" prefix + original text + 3D printing modifiers
     const enrichedPrompt = `A cute ${prompt}, ${safetyMods}, ${styleMods}`;
 
-    console.log('📝 Prompt enrichment:', { original: rawInput, enriched: enrichedPrompt });
+    console.log('📝 Prompt enrichment:', { original: rawInput, cleaned: prompt, enriched: enrichedPrompt });
 
     return enrichedPrompt;
 }
 
 export function detectLanguage(text: string): 'ru' | 'en' {
-    // Simple Cyrillic detection
     const cyrillicPattern = /[\u0400-\u04FF]/;
     return cyrillicPattern.test(text) ? 'ru' : 'en';
 }
