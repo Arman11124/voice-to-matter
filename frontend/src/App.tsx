@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import './i18n';
 import './App.css';
@@ -32,17 +32,41 @@ function App() {
   const serial = useWebSerial();
   const savedModels = useSavedModels();
   const [currentPrompt, setCurrentPrompt] = useState('');
+  const [isRefineMode, setIsRefineMode] = useState(false);
+  const modelViewerRef = useRef<HTMLElement | null>(null);
 
   // Handle voice button press
-  const handleVoicePress = useCallback(() => {
+  const handleVoicePress = useCallback((refineMode = false) => {
     if (appState !== 'idle' && appState !== 'ready' && appState !== 'done') return;
 
-    tripo.reset();
+    // Don't reset model if we're refining
+    if (!refineMode) {
+      tripo.reset();
+      setCurrentPrompt('');
+    }
+
+    setIsRefineMode(refineMode);
     setGcode(null);
     setPrintEstimate(null);
     speech.startListening();
     setAppState('listening');
   }, [appState, speech, tripo]);
+
+  // Capture screenshot from model-viewer
+  const captureScreenshot = useCallback(async (): Promise<string | null> => {
+    const modelViewer = modelViewerRef.current as any;
+    if (!modelViewer) return null;
+
+    try {
+      // model-viewer has a toDataURL method
+      const dataUrl = await modelViewer.toDataURL('image/png');
+      console.log('📷 Screenshot captured');
+      return dataUrl;
+    } catch (e) {
+      console.error('Screenshot error:', e);
+      return null;
+    }
+  }, []);
 
   // Handle voice button release
   const handleVoiceRelease = useCallback(async () => {
@@ -54,31 +78,38 @@ function App() {
     if (speech.transcript) {
       setAppState('generating');
 
-      // If we already have a model, combine prompts for refining
-      let finalPrompt: string;
-      if (currentPrompt && tripo.modelUrl) {
-        // Refining: combine "кошка" + "с косичкой" → "кошка с косичкой"
-        finalPrompt = `${currentPrompt}, ${speech.transcript}`;
-        console.log('🔄 Refining prompt:', finalPrompt);
+      let modelUrl: string | null = null;
+
+      if (isRefineMode && tripo.modelUrl) {
+        // REFINE MODE: Use image-to-model with screenshot
+        console.log('🔄 Refine mode: capturing screenshot and refining');
+
+        const screenshot = await captureScreenshot();
+        if (screenshot) {
+          // Combine prompts and enrich
+          const newPrompt = `${currentPrompt}, ${speech.transcript}`;
+          setCurrentPrompt(newPrompt);
+          const enrichedPrompt = enrichPrompt(newPrompt);
+
+          modelUrl = await tripo.refine(screenshot, enrichedPrompt);
+        } else {
+          // Fallback to regular generation if screenshot fails
+          const newPrompt = `${currentPrompt}, ${speech.transcript}`;
+          setCurrentPrompt(newPrompt);
+          const enrichedPrompt = enrichPrompt(newPrompt);
+          modelUrl = await tripo.generate(enrichedPrompt);
+        }
       } else {
-        // New generation
-        finalPrompt = speech.transcript;
+        // NEW GENERATION: Use text-to-model
+        setCurrentPrompt(speech.transcript);
+        const enrichedPrompt = enrichPrompt(speech.transcript);
+        modelUrl = await tripo.generate(enrichedPrompt);
       }
-
-      // Save the base prompt (without modifiers)
-      setCurrentPrompt(finalPrompt);
-
-      // Enrich prompt with safety modifiers
-      const enrichedPrompt = enrichPrompt(finalPrompt);
-
-      // Generate 3D model - use returned URL directly
-      const modelUrl = await tripo.generate(enrichedPrompt);
 
       if (modelUrl) {
         setAppState('ready');
 
         // For MVP, we'll use a placeholder G-code
-        // Full Kiri:Moto integration would go here
         const placeholderGcode = generatePlaceholderGcode();
         setGcode(placeholderGcode);
 
@@ -90,7 +121,9 @@ function App() {
     } else {
       setAppState('idle');
     }
-  }, [speech, tripo, currentPrompt]);
+
+    setIsRefineMode(false);
+  }, [speech, tripo, currentPrompt, isRefineMode, captureScreenshot]);
 
   // Handle print
   const handlePrint = useCallback(async () => {
@@ -164,6 +197,7 @@ function App() {
         <ModelViewer
           modelUrl={tripo.modelUrl}
           isLoading={appState === 'generating'}
+          ref={modelViewerRef}
         />
 
         {/* Model control buttons */}
@@ -182,8 +216,8 @@ function App() {
             </button>
             <button
               className="control-btn refine-btn"
-              onClick={handleVoicePress}
-              title="Добавить детали голосом"
+              onClick={() => handleVoicePress(true)}
+              title="Улучшить модель (Image-to-3D)"
             >
               ✨ Дорисовать
             </button>

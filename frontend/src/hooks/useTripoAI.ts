@@ -11,6 +11,7 @@ interface UseTripoAIReturn {
     modelUrl: string | null;
     error: string | null;
     generate: (prompt: string) => Promise<string | null>;
+    refine: (imageBase64: string, prompt: string) => Promise<string | null>;
     loadModel: (url: string) => void;
     reset: () => void;
 }
@@ -103,6 +104,68 @@ export function useTripoAI(): UseTripoAIReturn {
         }
     }, [pollStatus]);
 
+    // Refine existing model using screenshot + new prompt
+    const refine = useCallback(async (imageBase64: string, prompt: string): Promise<string | null> => {
+        setStatus('generating');
+        setProgress(0);
+        setError(null);
+
+        try {
+            console.log('📸 Starting refinement with screenshot and prompt:', prompt);
+
+            // Step 1: Upload screenshot
+            const uploadResponse = await fetch(`${API_BASE}/api/upload-image`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageBase64 })
+            });
+
+            const uploadData = await uploadResponse.json();
+
+            if (!uploadResponse.ok) {
+                throw new Error(uploadData.error || 'Failed to upload screenshot');
+            }
+
+            const { imageToken } = uploadData;
+            console.log('✅ Screenshot uploaded, token:', imageToken);
+
+            // Step 2: Create image-to-model task
+            const refineResponse = await fetch(`${API_BASE}/api/refine`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageToken, prompt })
+            });
+
+            const refineData = await refineResponse.json();
+
+            if (!refineResponse.ok) {
+                throw new Error(refineData.error || 'Failed to start refinement');
+            }
+
+            const { taskId } = refineData;
+            console.log('📋 Refine task created:', taskId);
+
+            // Step 3: Poll for completion
+            const originalUrl = await pollStatus(taskId);
+
+            // Use proxy to avoid CORS issues
+            const proxiedUrl = `${API_BASE}/api/model-proxy?url=${encodeURIComponent(originalUrl)}`;
+
+            console.log('✅ Refined model ready:', originalUrl);
+            setModelUrl(proxiedUrl);
+            setStatus('success');
+            setProgress(100);
+
+            return proxiedUrl;
+
+        } catch (e) {
+            console.error('Refinement error:', e);
+            setError(e instanceof Error ? e.message : 'Unknown error');
+            setStatus('error');
+            return null;
+        }
+    }, [pollStatus]);
+
     const reset = useCallback(() => {
         setStatus('idle');
         setProgress(0);
@@ -124,6 +187,7 @@ export function useTripoAI(): UseTripoAIReturn {
         modelUrl,
         error,
         generate,
+        refine,
         loadModel,
         reset
     };
