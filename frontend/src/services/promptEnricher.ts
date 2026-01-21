@@ -23,38 +23,71 @@ const STYLE_MODIFIERS = [
 // Common Russian words/roots to English translations
 // Using word roots to catch variations like кот, кота, котик, котика
 const RU_TO_EN: [RegExp, string][] = [
-    [/машин[аку]*/gi, 'toy car'],
-    [/драко[нва]*/gi, 'dragon'],
+    // Animals
     [/кош[каеу]*/gi, 'cat'],
     [/кот[аиуо]*/gi, 'cat'],
     [/котик[аиуо]*/gi, 'cute cat'],
     [/соба[каеуой]*/gi, 'dog'],
-    [/робота?/gi, 'robot'],
+    [/драко[нва]*/gi, 'dragon'],
     [/динозавра?/gi, 'dinosaur'],
-    [/самол[её]т[аеу]*/gi, 'airplane'],
-    [/ракет[аеуой]*/gi, 'rocket'],
-    [/звезд[аеуой]*/gi, 'star'],
-    [/сердц[аеуо]*/gi, 'heart'],
-    [/цвето?к?[аеуо]*/gi, 'flower'],
-    [/дом[аеуо]*/gi, 'house'],
-    [/замо?к?[аеуо]*/gi, 'castle'],
-    [/кораб[ле]*/gi, 'ship'],
-    [/танк[аеуо]*/gi, 'tank'],
     [/медвед[ья]*/gi, 'bear'],
-    [/зай[ацчк]*/gi, 'rabbit'],
+    [/зай[ацчкяи]*/gi, 'rabbit'],
     [/слон[аеуо]*/gi, 'elephant'],
     [/лошад[ьиейку]*/gi, 'horse'],
     [/единорог[аеуо]*/gi, 'unicorn'],
+    [/рыб[аукеой]*/gi, 'fish'],
+    [/птиц[аеуой]*/gi, 'bird'],
+    [/бабочк[аеуой]*/gi, 'butterfly'],
+    [/черепах[аеуой]*/gi, 'turtle'],
+
+    // Vehicles
+    [/машин[аку]*/gi, 'toy car'],
+    [/самол[её]т[аеу]*/gi, 'airplane'],
+    [/ракет[аеуой]*/gi, 'rocket'],
+    [/кораб[ле]*/gi, 'ship'],
+    [/танк[аеуо]*/gi, 'tank'],
+    [/поезд[аеу]*/gi, 'train'],
+    [/вертол[её]т[аеу]*/gi, 'helicopter'],
+
+    // Objects
+    [/цепоч[каеуой]*/gi, 'chain necklace'],
+    [/цеп[ьию]*/gi, 'chain'],
+    [/кольц[оаеу]*/gi, 'ring'],
+    [/ключ[аеиуо]*/gi, 'key'],
+    [/мяч[аиуо]*/gi, 'ball'],
+    [/шар[аеу]*/gi, 'sphere ball'],
+    [/куб[аеиу]*/gi, 'cube'],
+    [/звезд[аеуой]*/gi, 'star'],
+    [/сердц[аеуо]*/gi, 'heart'],
+    [/цвето?к?[аеуо]*/gi, 'flower'],
+    [/дерев[оаеу]*/gi, 'tree'],
+    [/гриб[аеуо]*/gi, 'mushroom'],
+
+    // Buildings
+    [/дом[аеуо]*/gi, 'house'],
+    [/замо?к?[аеуо]*/gi, 'castle'],
+    [/башн[яюией]*/gi, 'tower'],
+
+    // Characters
+    [/робот[аеуо]*/gi, 'robot'],
     [/принцес[саеуой]*/gi, 'princess'],
     [/рыцар[ья]*/gi, 'knight'],
+    [/пират[аеуо]*/gi, 'pirate'],
+    [/инопланетян[аеуиом]*/gi, 'alien'],
+
+    // Weapons/Items
     [/меч[аеуо]*/gi, 'sword'],
     [/щит[аеуо]*/gi, 'shield'],
+    [/корон[аеуой]*/gi, 'crown'],
+    [/чаш[аеукой]*/gi, 'cup'],
+
     // Skip common non-object words
     [/нарисуй/gi, ''],
     [/сделай/gi, ''],
     [/хочу/gi, ''],
     [/создай/gi, ''],
     [/покажи/gi, ''],
+    [/напечатай/gi, ''],
 ];
 
 export function enrichPrompt(rawInput: string): string {
