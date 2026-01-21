@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 
-// Backend API URL - will be VPS in production
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Use relative paths - works on Vercel with serverless functions
+const API_BASE = '';
 
 export type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
 
@@ -26,7 +26,7 @@ export function useTripoAI(): UseTripoAIReturn {
 
         while (attempts < maxAttempts) {
             try {
-                const response = await fetch(`${API_BASE}/api/status/${taskId}`);
+                const response = await fetch(`${API_BASE}/api/status?taskId=${taskId}`);
                 const data = await response.json();
 
                 if (!response.ok) {
