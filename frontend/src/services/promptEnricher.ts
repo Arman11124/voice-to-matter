@@ -38,6 +38,7 @@ const RU_TO_EN: Record<string, string> = {
     // --- ACTIONS/MODIFIERS (ДЕЙСТВИЯ) ---
     'дорисуй': 'add', 'добав': 'add', 'приделай': 'add',
     'нарису': 'add', 'прирису': 'add', 'трас': 'add', // "трасу" -> "add"
+    'тряс': 'add', 'трис': 'add', 'трес': 'add', // Phonetic fixes for STT errors ("трясу" -> "add")
     'с': 'with', 'со': 'with', 'без': 'without',
     'ему': '', 'ей': '', 'им': '', // pronouns -> skip to avoid "add with wings" grammar issues
 
