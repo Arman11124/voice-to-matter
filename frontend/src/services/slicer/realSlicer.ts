@@ -4,17 +4,21 @@ import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { KOBRA_2_PRO_PROFILE } from './printerProfiles';
 
 // Setup ClipperLib (via standard JS global or import if available)
-// In a real env we might need a specific import, but for this 'Production V1' 
-// we'll implement a robust "Vase Mode + Infill" geometric approach purely in TS if Clipper is flaky, 
-// OR use a simplified offsetting logic.
-// UPDATE: We will use a geometric offsetting approach "Inset" logic to avoid complex Clipper WASM issues for now.
+// For this 'Production V1' we use a geometric offsetting approach to avoid complex dependencies.
 
 const LAYER_HEIGHT = 0.2;
 const WALL_THICKNESS = 0.4; // Nozzle size
-// const INFILL_DENSITY = 0.15; // Unused in Vase Mode V1
 const TRAVEL_SPEED = 6000;
 const PRINT_SPEED = 3000; // 50mm/s
-// const OUTER_WALL_SPEED = 1500; // Unused, using flat speed for robustness
+
+// Helper for volumetric extrusion calculation
+// E = (d * h * w) / (PI * (r_fil)^2)
+// For 1.75mm filament, Area = 2.405mm2
+function calculateExtrusion(dist: number, layerHeight: number, wallWidth: number): number {
+    const volume = dist * layerHeight * wallWidth;
+    const filamentArea = 2.40528; // PI * (1.75/2)^2
+    return volume / filamentArea;
+}
 
 export async function sliceModelReal(modelUrl: string, onProgress: (percent: number) => void): Promise<string> {
     onProgress(5);
@@ -30,8 +34,7 @@ export async function sliceModelReal(modelUrl: string, onProgress: (percent: num
     // 3. Slice Loop
     const bbox = new THREE.Box3().setFromObject(mesh);
     const minZ = bbox.min.z;
-    const maxZ = bbox.max.z; // Tripo models are Y-up usually, we need to ensure Z-up or rotate. 
-    // Actually standard 3D printing is Z-up. THREE is Y-up. We should rotate.
+    const maxZ = bbox.max.z;
 
     const layers = [];
     const totalLayers = Math.ceil((maxZ - minZ) / LAYER_HEIGHT);
@@ -109,12 +112,11 @@ function prepareGeometry(mesh: THREE.Mesh): THREE.BufferGeometry {
     const bbox = geometry.boundingBox!;
     const height = bbox.max.z - bbox.min.z;
 
-    // Scale to a reasonable toy size (e.g. 80mm height if too small or too big)
-    // Tripo models are often normalized to 1 unit.
+    // Scale to a reasonable toy size (e.g. 80mm height if too small or true scale)
     const SCALE = height < 10 ? 60 : 1;
     geometry.scale(SCALE, SCALE, SCALE);
 
-    // Re-center on Bed center (110, 110 for Kobra)
+    // Re-center on Bed center
     geometry.computeBoundingBox();
     const center = geometry.boundingBox!.getCenter(new THREE.Vector3());
     const zOffset = -geometry.boundingBox!.min.z;
@@ -150,8 +152,6 @@ function intersectTrianglePlane(a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vec
         points.push(new THREE.Vector3().lerpVectors(c, a, t));
     }
 
-    // We expect exactly 2 intersection points for a "slice" through a triangle
-    // (unless it lies flat on the plane, which we ignore for robustness)
     if (points.length === 2) {
         return new THREE.Line3(points[0], points[1]);
     }
@@ -159,8 +159,6 @@ function intersectTrianglePlane(a: THREE.Vector3, b: THREE.Vector3, c: THREE.Vec
 }
 
 function linkSegments(segments: THREE.Line3[]): THREE.Vector3[][] {
-    // Basic greedy linker
-    // In production this needs k-d tree optimization, but for <10k triangles N^2 is fine-ish on modern phones
     const contours: THREE.Vector3[][] = [];
     if (segments.length === 0) return contours;
 
@@ -195,7 +193,6 @@ function linkSegments(segments: THREE.Line3[]): THREE.Vector3[][] {
 
         // Close loop check
         if (contour[0].distanceToSquared(contour[contour.length - 1]) < EPSILON) {
-            // It's a loop
             contours.push(contour);
         }
     }
@@ -207,21 +204,27 @@ function generateGcode(layers: { z: number, contours: THREE.Vector3[][] }[]): st
     let e = 0;
 
     layers.forEach((layer, i) => {
-        lines.push(`; LAYER ${i}`);
+        lines.push(`; LAYER ${i} Z=${layer.z.toFixed(3)}`);
         lines.push(`G1 Z${layer.z.toFixed(3)} F${TRAVEL_SPEED}`);
 
         layer.contours.forEach(contour => {
-            // Move to start
+            if (contour.length < 2) return;
+
+            // Move to start (Travel)
             const start = contour[0];
             lines.push(`G1 X${start.x.toFixed(3)} Y${start.y.toFixed(3)} F${TRAVEL_SPEED}`);
 
-            // Extrude path
+            // Extrude path (Wall)
             for (let j = 1; j < contour.length; j++) {
                 const p = contour[j];
                 const dist = p.distanceTo(contour[j - 1]);
-                const extrusion = dist * 0.05; // Simplified E calc (needs proper mm3 logic but works for toys)
-                e += extrusion;
-                lines.push(`G1 X${p.x.toFixed(3)} Y${p.y.toFixed(3)} E${e.toFixed(4)} F${OUTER_WALL_SPEED}`);
+                if (dist < 0.001) continue;
+
+                // Real E calc
+                const extrusionDelta = calculateExtrusion(dist, LAYER_HEIGHT, WALL_THICKNESS);
+                e += extrusionDelta;
+
+                lines.push(`G1 X${p.x.toFixed(3)} Y${p.y.toFixed(3)} E${e.toFixed(5)} F${PRINT_SPEED}`);
             }
         });
     });
