@@ -197,7 +197,7 @@ function App() {
         <ModelViewer
           modelUrl={tripo.modelUrl}
           isLoading={appState === 'generating'}
-          ref={modelViewerRef}
+          onViewerReady={(viewer) => { modelViewerRef.current = viewer; }}
         />
 
         {/* Model control buttons */}
