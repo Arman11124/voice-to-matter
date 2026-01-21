@@ -15,6 +15,7 @@ import { useWebSerial } from './hooks/useWebSerial';
 import { useSavedModels } from './hooks/useSavedModels';
 import { useCloudSync } from './hooks/useCloudSync';
 import type { SavedModel } from './hooks/useSavedModels';
+import { useSlicer } from './hooks/useSlicer'; // NEW: Slicer hook
 
 import { enrichPrompt } from './services/promptEnricher';
 import { wrapGcode, estimatePrint } from './services/gcodeGenerator';
@@ -24,6 +25,7 @@ type AppState = 'idle' | 'listening' | 'generating' | 'ready' | 'slicing' | 'pri
 
 function App() {
   const { t, i18n } = useTranslation();
+  // ... state ...
   const [appState, setAppState] = useState<AppState>('idle');
   const [gcode, setGcode] = useState<string | null>(null);
   const [printEstimate, setPrintEstimate] = useState<{ minutes: number; layers: number } | null>(null);
@@ -38,6 +40,16 @@ function App() {
   const modelViewerRef = useRef<HTMLElement | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);
   const cloudSync = useCloudSync();
+  const slicer = useSlicer(); // NEW: Slicer hook
+
+  // Handle "Print via App" (Slicing + Share)
+  const handleAppPrint = async () => {
+    if (!tripo.modelUrl) return;
+
+    const filename = (currentPrompt || 'model').slice(0, 20).replace(/\s+/g, '_');
+    await slicer.sliceAndShare(tripo.modelUrl, filename);
+  };
+
 
   // Handle voice button press
   const handleVoicePress = useCallback((refineMode = false) => {
@@ -313,6 +325,21 @@ function App() {
           <div className="print-estimate">
             <span>⏱️ ~{printEstimate.minutes} мин</span>
             <span>📐 {printEstimate.layers} слоёв</span>
+          </div>
+        )}
+
+        {/* Send to Anycubic App Button (Mobile Friendly) */}
+        {appState === 'ready' && (
+          <div className="app-print-section" style={{ marginBottom: '1rem' }}>
+            <button
+              className="action-button primary-button"
+              onClick={handleAppPrint}
+              disabled={slicer.isSlicing}
+              style={{ width: '100%', background: '#6c5ce7' }} // Purple for "Brain" action
+            >
+              {slicer.isSlicing ? `⚙️ Подготовка ${Math.round(slicer.progress)}%...` : '📱 Отправить в приложение'}
+            </button>
+            {slicer.error && <div className="error-message">{slicer.error}</div>}
           </div>
         )}
 
