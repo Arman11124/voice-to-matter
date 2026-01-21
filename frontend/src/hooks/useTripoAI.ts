@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 
-// Use relative paths - works on Vercel with serverless functions
-const API_BASE = '';
+// Cloudflare Tunnel HTTPS proxy to VPS backend
+const API_BASE = 'https://johnston-arbitration-maiden-capacity.trycloudflare.com';
 
 export type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
 
@@ -26,7 +26,7 @@ export function useTripoAI(): UseTripoAIReturn {
 
         while (attempts < maxAttempts) {
             try {
-                const response = await fetch(`${API_BASE}/api/status?taskId=${taskId}`);
+                const response = await fetch(`${API_BASE}/api/status/${taskId}`);
                 const data = await response.json();
 
                 if (!response.ok) {
