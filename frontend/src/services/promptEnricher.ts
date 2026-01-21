@@ -39,7 +39,7 @@ const RU_TO_EN: Record<string, string> = {
     'дорисуй': 'add', 'добав': 'add', 'приделай': 'add',
     'нарису': 'add', 'прирису': 'add', 'трас': 'add', // "трасу" -> "add"
     'с': 'with', 'со': 'with', 'без': 'without',
-    'ему': 'with', 'ей': 'with', 'им': 'with', // pronouns -> "with" helps "add with wings" logic
+    'ему': '', 'ей': '', 'им': '', // pronouns -> skip to avoid "add with wings" grammar issues
 
     // --- ANIMALS (ЖИВОТНЫЕ) ---
     'кош': 'cat', 'кот': 'cat', 'кис': 'cat',

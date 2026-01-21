@@ -90,6 +90,31 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cloudSync.pin, savedModels.models, cloudSync.syncToCloud, cloudSync.loadFromCloud]);
 
+  // POLL for changes from other devices every 10 seconds (heartbeat)
+  useEffect(() => {
+    if (!cloudSync.pin) return;
+    const intervalId = setInterval(async () => {
+      try {
+        const remoteModels = await cloudSync.loadFromCloud();
+        if (remoteModels) {
+          let hasNew = false;
+          remoteModels.forEach(m => {
+            if (!savedModels.models.find(local => local.id === m.id)) {
+              savedModels.saveModel(m.prompt, m.modelUrl, m.thumbnail, m.id, m.createdAt);
+              hasNew = true;
+            }
+          });
+          // Only log if we actually found something new to avoid console spam
+          if (hasNew) console.log('🔄 Auto-pulled new models from cloud');
+        }
+      } catch (e) {
+        console.error("Polling error", e);
+      }
+    }, 10000); // 10 seconds
+    return () => clearInterval(intervalId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloudSync.pin, cloudSync.loadFromCloud]); // Don't depend on savedModels to avoid reset loops
+
   // Capture screenshot from model-viewer
   const captureScreenshot = useCallback(async (): Promise<string | null> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
