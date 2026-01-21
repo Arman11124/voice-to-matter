@@ -445,11 +445,12 @@ export function enrichPrompt(rawInput: string): string {
         if (translated) return translated;
 
         // Keep original if no translation found (names etc)
+        // Keep original if no translation found (names etc)
         // Check if it looks like Russian (cyrillic)
         if (/[а-я]/.test(cleanWord)) {
-            // It's Russian but not in dictionary.
-            // Tripo might still understand it, so keep it.
-            return cleanWord;
+            // STRIP unknown Russian words to avoid confusing the AI
+            // "Mutilated face" fix: leftover cyrillic noise = glitches
+            return '';
         }
 
         return word; // Keep English/numbers as is

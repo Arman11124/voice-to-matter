@@ -10,8 +10,8 @@ interface UseCloudSyncReturn {
     error: string | null;
     setPin: (pin: string) => void;
     clearPin: () => void;
-    syncToCloud: (models: SavedModel[]) => Promise<boolean>;
-    loadFromCloud: () => Promise<SavedModel[] | null>;
+    syncToCloud: (models: SavedModel[], pinOverride?: string) => Promise<boolean>;
+    loadFromCloud: (pinOverride?: string) => Promise<SavedModel[] | null>;
     checkPinExists: (pin: string) => Promise<boolean>;
 }
 
