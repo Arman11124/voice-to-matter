@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import './i18n';
 import './App.css';
@@ -58,35 +58,23 @@ function App() {
 
   // Auto-sync models to cloud when they change (debounced)
   const isSyncingRef = useRef(false);
-  useState(() => {
-    // Only separate this effect to keep file clean
-  });
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const debouncedSync = useCallback(
-    (() => {
-      let timeoutId: NodeJS.Timeout;
-      return () => {
-        if (timeoutId) clearTimeout(timeoutId);
-        timeoutId = setTimeout(async () => {
-          if (cloudSync.pin && savedModels.models.length > 0 && !isSyncingRef.current) {
-            isSyncingRef.current = true;
-            try {
-              await cloudSync.syncToCloud(savedModels.models);
-            } finally {
-              isSyncingRef.current = false;
-            }
-          }
-        }, 2000);
-      };
-    })(),
-    [cloudSync.pin, savedModels.models, cloudSync.syncToCloud]
-  );
+  useEffect(() => {
+    if (!cloudSync.pin || savedModels.models.length === 0) return;
 
-  // Trigger auto-sync
-  if (cloudSync.pin && savedModels.models.length > 0) {
-    debouncedSync();
-  }
+    const timeoutId = setTimeout(async () => {
+      if (isSyncingRef.current) return;
+      isSyncingRef.current = true;
+      try {
+        await cloudSync.syncToCloud(savedModels.models);
+      } finally {
+        isSyncingRef.current = false;
+      }
+    }, 2000);
+
+    return () => clearTimeout(timeoutId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [cloudSync.pin, savedModels.models, cloudSync.syncToCloud]);
 
   // Capture screenshot from model-viewer
   const captureScreenshot = useCallback(async (): Promise<string | null> => {
