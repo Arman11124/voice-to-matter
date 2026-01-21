@@ -193,7 +193,7 @@ const RU_TO_EN: Record<string, string> = {
     'русалк': 'mermaid',
     'ангел': 'angel',
     'демон': 'demon', 'черт': 'imp',
-    'паук': 'spider', // Moved general spider here
+
 
     // --- VEHICLES (ТРАНСПОРТ) ---
     'машин': 'car', 'авто': 'car', 'тачк': 'car',
@@ -242,7 +242,7 @@ const RU_TO_EN: Record<string, string> = {
     'магазин': 'shop',
     'больниц': 'hospital',
     'церк': 'church', 'храм': 'temple', 'мечет': 'mosque',
-    'пирамид': 'pyramid',
+
     'мост': 'bridge',
     'маяк': 'lighthouse',
     'мельниц': 'windmill',
@@ -294,6 +294,26 @@ const RU_TO_EN: Record<string, string> = {
     'чай': 'tea cup',
     'бутылк': 'bottle',
     'бан': 'jar can',
+
+    // --- GEOMETRIC SHAPES (ГЕОМЕТРИЧЕСКИЕ ФИГУРЫ) ---
+    'шар': 'sphere', 'сфер': 'sphere',
+    'куб': 'cube', // 'кубик' is in toys
+    'пирамид': 'pyramid',
+    'конус': 'cone',
+    'цилиндр': 'cylinder',
+    'призм': 'prism',
+    'тор': 'torus', 'бублик': 'torus donut',
+    'овал': 'oval',
+    'круг': 'circle',
+    'квадрат': 'square',
+    'треугольник': 'triangle',
+    'звезд': 'star',
+    'ромб': 'rhombus',
+    'шестиугольник': 'hexagon',
+    'многоугольник': 'polygon',
+    'спирал': 'spiral',
+    'сердц': 'heart shape',
+
 
     // --- PLANTS (РАСТЕНИЯ) ---
     'дерев': 'tree',
@@ -349,7 +369,7 @@ const RU_TO_EN: Record<string, string> = {
     'пистолет': 'pistol gun', 'ружь': 'rifle', 'автомат': 'machine gun',
     'пушк': 'cannon',
     'корон': 'crown',
-    'куб': 'cup trophy',
+
     'гитар': 'guitar',
     'скрипк': 'violin',
     'барабан': 'drum',
@@ -359,8 +379,8 @@ const RU_TO_EN: Record<string, string> = {
     'камер': 'camera', 'фотоаппарат': 'camera',
 
     // --- MISC (РАЗНОЕ) ---
-    'сердц': 'heart',
-    'звезд': 'star',
+
+
     'лун': 'moon', 'месяц': 'crescent moon',
     'солнц': 'sun',
     'облак': 'cloud',
