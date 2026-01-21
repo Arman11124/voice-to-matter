@@ -1,6 +1,6 @@
 /**
  * Enriches child's simple prompt with 3D printing-safe modifiers
- * Transforms: "машинка" → "A cute toy car, chunky design..."
+ * Now works with ANY language - Tripo AI understands Russian, English, and more!
  */
 
 const SAFETY_MODIFIERS = [
@@ -20,83 +20,19 @@ const STYLE_MODIFIERS = [
     'smooth surfaces'
 ];
 
-// Common Russian words/roots to English translations
-// Using word roots to catch variations like кот, кота, котик, котика
-const RU_TO_EN: [RegExp, string][] = [
-    // Animals
-    [/кош[каеу]*/gi, 'cat'],
-    [/кот[аиуо]*/gi, 'cat'],
-    [/котик[аиуо]*/gi, 'cute cat'],
-    [/соба[каеуой]*/gi, 'dog'],
-    [/драко[нва]*/gi, 'dragon'],
-    [/динозавра?/gi, 'dinosaur'],
-    [/медвед[ья]*/gi, 'bear'],
-    [/зай[ацчкяи]*/gi, 'rabbit'],
-    [/слон[аеуо]*/gi, 'elephant'],
-    [/лошад[ьиейку]*/gi, 'horse'],
-    [/единорог[аеуо]*/gi, 'unicorn'],
-    [/рыб[аукеой]*/gi, 'fish'],
-    [/птиц[аеуой]*/gi, 'bird'],
-    [/бабочк[аеуой]*/gi, 'butterfly'],
-    [/черепах[аеуой]*/gi, 'turtle'],
-
-    // Vehicles
-    [/машин[аку]*/gi, 'toy car'],
-    [/самол[её]т[аеу]*/gi, 'airplane'],
-    [/ракет[аеуой]*/gi, 'rocket'],
-    [/кораб[ле]*/gi, 'ship'],
-    [/танк[аеуо]*/gi, 'tank'],
-    [/поезд[аеу]*/gi, 'train'],
-    [/вертол[её]т[аеу]*/gi, 'helicopter'],
-
-    // Objects
-    [/цепоч[каеуой]*/gi, 'chain necklace'],
-    [/цеп[ьию]*/gi, 'chain'],
-    [/кольц[оаеу]*/gi, 'ring'],
-    [/ключ[аеиуо]*/gi, 'key'],
-    [/мяч[аиуо]*/gi, 'ball'],
-    [/шар[аеу]*/gi, 'sphere ball'],
-    [/куб[аеиу]*/gi, 'cube'],
-    [/звезд[аеуой]*/gi, 'star'],
-    [/сердц[аеуо]*/gi, 'heart'],
-    [/цвето?к?[аеуо]*/gi, 'flower'],
-    [/дерев[оаеу]*/gi, 'tree'],
-    [/гриб[аеуо]*/gi, 'mushroom'],
-
-    // Buildings
-    [/дом[аеуо]*/gi, 'house'],
-    [/замо?к?[аеуо]*/gi, 'castle'],
-    [/башн[яюией]*/gi, 'tower'],
-
-    // Characters
-    [/робот[аеуо]*/gi, 'robot'],
-    [/принцес[саеуой]*/gi, 'princess'],
-    [/рыцар[ья]*/gi, 'knight'],
-    [/пират[аеуо]*/gi, 'pirate'],
-    [/инопланетян[аеуиом]*/gi, 'alien'],
-
-    // Weapons/Items
-    [/меч[аеуо]*/gi, 'sword'],
-    [/щит[аеуо]*/gi, 'shield'],
-    [/корон[аеуой]*/gi, 'crown'],
-    [/чаш[аеукой]*/gi, 'cup'],
-
-    // Skip common non-object words
-    [/нарисуй/gi, ''],
-    [/сделай/gi, ''],
-    [/хочу/gi, ''],
-    [/создай/gi, ''],
-    [/покажи/gi, ''],
-    [/напечатай/gi, ''],
+// Words to remove (command words that aren't objects)
+const SKIP_WORDS = [
+    /\b(нарисуй|сделай|хочу|создай|покажи|напечатай|пожалуйста|мне|а)\b/gi,
+    /\b(draw|make|want|create|show|print|please|me|a|an|the)\b/gi,
 ];
 
 export function enrichPrompt(rawInput: string): string {
     // Normalize input
     let prompt = rawInput.toLowerCase().trim();
 
-    // Translate Russian to English using regex patterns
-    for (const [pattern, replacement] of RU_TO_EN) {
-        prompt = prompt.replace(pattern, replacement);
+    // Remove command words
+    for (const pattern of SKIP_WORDS) {
+        prompt = prompt.replace(pattern, '');
     }
 
     // Clean up extra spaces
@@ -107,10 +43,11 @@ export function enrichPrompt(rawInput: string): string {
         prompt = 'cute toy';
     }
 
-    // Build enhanced prompt
+    // Build enhanced prompt - keep original language, AI understands it!
     const safetyMods = SAFETY_MODIFIERS.join(', ');
     const styleMods = STYLE_MODIFIERS.join(', ');
 
+    // Add "cute" prefix + original text + 3D printing modifiers
     const enrichedPrompt = `A cute ${prompt}, ${safetyMods}, ${styleMods}`;
 
     console.log('📝 Prompt enrichment:', { original: rawInput, enriched: enrichedPrompt });

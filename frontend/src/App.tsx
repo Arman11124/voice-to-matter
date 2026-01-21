@@ -235,12 +235,15 @@ function App() {
           models={savedModels.models}
           onSelect={(model: SavedModel) => {
             // Load saved model for viewing/printing
-            tripo.reset();
             setCurrentPrompt(model.prompt);
-            // We can't restore modelUrl directly to tripo hook,
-            // so we'll need a different approach - regenerate or just show
-            // For now, just set prompt and let user regenerate if needed
-            setAppState('idle');
+            tripo.loadModel(model.modelUrl);
+            setAppState('ready');
+
+            // Generate placeholder G-code for the loaded model
+            const placeholderGcode = generatePlaceholderGcode();
+            setGcode(placeholderGcode);
+            const estimate = estimatePrint(placeholderGcode);
+            setPrintEstimate({ minutes: estimate.estimatedMinutes, layers: estimate.layers });
           }}
           onDelete={(id) => savedModels.deleteModel(id)}
         />

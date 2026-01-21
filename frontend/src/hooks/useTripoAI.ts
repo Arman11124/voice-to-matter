@@ -11,6 +11,7 @@ interface UseTripoAIReturn {
     modelUrl: string | null;
     error: string | null;
     generate: (prompt: string) => Promise<string | null>;
+    loadModel: (url: string) => void;
     reset: () => void;
 }
 
@@ -109,12 +110,21 @@ export function useTripoAI(): UseTripoAIReturn {
         setError(null);
     }, []);
 
+    // Load a saved model URL directly
+    const loadModel = useCallback((url: string) => {
+        setModelUrl(url);
+        setStatus('success');
+        setProgress(100);
+        setError(null);
+    }, []);
+
     return {
         status,
         progress,
         modelUrl,
         error,
         generate,
+        loadModel,
         reset
     };
 }
