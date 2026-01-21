@@ -58,6 +58,7 @@ function App() {
 
   // Capture screenshot from model-viewer
   const captureScreenshot = useCallback(async (): Promise<string | null> => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const modelViewer = modelViewerRef.current as any;
     if (!modelViewer) return null;
 

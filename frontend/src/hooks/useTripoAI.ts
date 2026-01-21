@@ -27,31 +27,26 @@ export function useTripoAI(): UseTripoAIReturn {
         let attempts = 0;
 
         while (attempts < maxAttempts) {
-            try {
-                const response = await fetch(`${API_BASE}/api/status/${taskId}`);
-                const data = await response.json();
+            const response = await fetch(`${API_BASE}/api/status/${taskId}`);
+            const data = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(data.error || 'Status check failed');
-                }
-
-                setProgress(data.progress || 0);
-
-                if (data.status === 'success' && data.modelUrl) {
-                    return data.modelUrl;
-                }
-
-                if (data.status === 'failed') {
-                    throw new Error(data.error || 'Generation failed');
-                }
-
-                // Wait 2 seconds before next poll
-                await new Promise(resolve => setTimeout(resolve, 2000));
-                attempts++;
-
-            } catch (e) {
-                throw e;
+            if (!response.ok) {
+                throw new Error(data.error || 'Status check failed');
             }
+
+            setProgress(data.progress || 0);
+
+            if (data.status === 'success' && data.modelUrl) {
+                return data.modelUrl;
+            }
+
+            if (data.status === 'failed') {
+                throw new Error(data.error || 'Generation failed');
+            }
+
+            // Wait 2 seconds before next poll
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            attempts++;
         }
 
         throw new Error('Generation timed out');

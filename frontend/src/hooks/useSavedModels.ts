@@ -18,19 +18,15 @@ interface UseSavedModelsReturn {
 }
 
 export function useSavedModels(): UseSavedModelsReturn {
-    const [models, setModels] = useState<SavedModel[]>([]);
-
-    // Load from localStorage on mount
-    useEffect(() => {
+    const [models, setModels] = useState<SavedModel[]>(() => {
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                setModels(JSON.parse(saved));
-            }
+            return saved ? JSON.parse(saved) : [];
         } catch (e) {
             console.error('Failed to load saved models:', e);
+            return [];
         }
-    }, []);
+    });
 
     // Save to localStorage whenever models change
     useEffect(() => {
