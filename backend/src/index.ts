@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import tripoRoutes from './routes/tripo';
+import syncRoutes from './routes/sync';
 
 // Load .env from backend directory
 dotenv.config({ path: path.join(process.cwd(), '.env') });
@@ -15,13 +16,14 @@ const PORT = process.env.PORT || 3001;
 // Middleware
 app.use(cors({
     origin: '*', // Allow all origins for development
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'HEAD'],
     allowedHeaders: ['Content-Type']
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' })); // Increase limit for model data
 
 // Routes
 app.use('/api', tripoRoutes);
+app.use('/api/sync', syncRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -31,4 +33,5 @@ app.get('/health', (req, res) => {
 app.listen(PORT, () => {
     console.log(`🚀 Voice-to-Matter Proxy running on port ${PORT}`);
     console.log(`📡 Tripo AI proxy ready at http://localhost:${PORT}/api`);
+    console.log(`💾 Sync API ready at http://localhost:${PORT}/api/sync`);
 });

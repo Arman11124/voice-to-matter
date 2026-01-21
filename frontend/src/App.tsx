@@ -7,11 +7,13 @@ import { VoiceButton } from './components/VoiceButton';
 import { ModelViewer } from './components/ModelViewer';
 import { PrinterPanel } from './components/PrinterPanel';
 import { SavedModelsGallery } from './components/SavedModelsGallery';
+import { PinModal } from './components/PinModal';
 
 import { useSpeechRecognition } from './hooks/useSpeechRecognition';
 import { useTripoAI } from './hooks/useTripoAI';
 import { useWebSerial } from './hooks/useWebSerial';
 import { useSavedModels } from './hooks/useSavedModels';
+import { useCloudSync } from './hooks/useCloudSync';
 import type { SavedModel } from './hooks/useSavedModels';
 
 import { enrichPrompt } from './services/promptEnricher';
@@ -34,6 +36,8 @@ function App() {
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [isRefineMode, setIsRefineMode] = useState(false);
   const modelViewerRef = useRef<HTMLElement | null>(null);
+  const [showPinModal, setShowPinModal] = useState(false);
+  const cloudSync = useCloudSync();
 
   // Handle voice button press
   const handleVoicePress = useCallback((refineMode = false) => {
@@ -160,9 +164,14 @@ function App() {
       <header className="header">
         <h1>{t('app.title')}</h1>
         <p>{t('app.subtitle')}</p>
-        <button className="lang-toggle" onClick={toggleLanguage}>
-          {i18n.language === 'ru' ? '🇬🇧 EN' : '🇷🇺 RU'}
-        </button>
+        <div className="header-buttons">
+          <button className="cloud-btn" onClick={() => setShowPinModal(true)} title="Облачная синхронизация">
+            ☁️ {cloudSync.pin ? `PIN: ${cloudSync.pin}` : 'Синхро'}
+          </button>
+          <button className="lang-toggle" onClick={toggleLanguage}>
+            {i18n.language === 'ru' ? '🇬🇧 EN' : '🇷🇺 RU'}
+          </button>
+        </div>
       </header>
 
       {/* Main content */}
@@ -289,6 +298,35 @@ function App() {
           ⚠️ Используй Chrome или Edge для голосового управления
         </div>
       )}
+
+      {/* PIN Modal for cloud sync */}
+      <PinModal
+        isOpen={showPinModal}
+        currentPin={cloudSync.pin}
+        onSetPin={cloudSync.setPin}
+        onClearPin={cloudSync.clearPin}
+        onClose={() => setShowPinModal(false)}
+        onSync={async () => {
+          const success = await cloudSync.syncToCloud(savedModels.models);
+          if (success) {
+            setShowPinModal(false);
+          }
+        }}
+        onRestore={async () => {
+          const models = await cloudSync.loadFromCloud();
+          if (models && models.length > 0) {
+            // Merge with local models
+            models.forEach(m => {
+              if (!savedModels.models.find(existing => existing.id === m.id)) {
+                savedModels.saveModel(m.prompt, m.modelUrl, m.thumbnail);
+              }
+            });
+            setShowPinModal(false);
+          }
+        }}
+        isLoading={cloudSync.isLoading}
+        error={cloudSync.error}
+      />
     </div>
   );
 }
