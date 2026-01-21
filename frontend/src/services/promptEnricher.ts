@@ -161,7 +161,7 @@ const RU_TO_EN: Record<string, string> = {
     'покемон': 'pokemon', 'пикачу': 'Pikachu',
     'супергеро': 'superhero',
     'бэтмен': 'Batman',
-    'спайдер': 'Spider-Man', 'паук': 'Spider-Man', // человек-паук
+    'спайдер': 'Spider-Man', // человек-паук (removed duplicate 'паук')
     'супермен': 'Superman',
     'халк': 'Hulk',
     'железн': 'Iron Man', // железный человек
@@ -193,6 +193,7 @@ const RU_TO_EN: Record<string, string> = {
     'русалк': 'mermaid',
     'ангел': 'angel',
     'демон': 'demon', 'черт': 'imp',
+    'паук': 'spider', // Moved general spider here
 
     // --- VEHICLES (ТРАНСПОРТ) ---
     'машин': 'car', 'авто': 'car', 'тачк': 'car',
@@ -287,7 +288,7 @@ const RU_TO_EN: Record<string, string> = {
     'сыр': 'cheese',
     'колбас': 'sausage', 'сосис': 'sausage',
     'яйц': 'egg',
-    'рыб': 'fish',
+    // 'рыб': 'fish', removed duplicate (defined in ANIMALS section usually)
     'суш': 'sushi', 'ролл': 'sushi roll',
     'кофе': 'coffee cup',
     'чай': 'tea cup',

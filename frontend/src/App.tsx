@@ -305,6 +305,7 @@ function App() {
         currentPin={cloudSync.pin}
         onSetPin={cloudSync.setPin}
         onClearPin={cloudSync.clearPin}
+        checkPinExists={cloudSync.checkPinExists}
         onClose={() => setShowPinModal(false)}
         onSync={async () => {
           const success = await cloudSync.syncToCloud(savedModels.models);

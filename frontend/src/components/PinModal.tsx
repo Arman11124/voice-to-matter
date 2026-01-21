@@ -11,6 +11,7 @@ interface PinModalProps {
     onRestore: () => void;
     isLoading: boolean;
     error: string | null;
+    checkPinExists: (pin: string) => Promise<boolean>;
 }
 
 export function PinModal({
@@ -22,16 +23,25 @@ export function PinModal({
     onSync,
     onRestore,
     isLoading,
-    error
+    error,
+    checkPinExists
 }: PinModalProps) {
     const [inputPin, setInputPin] = useState('');
     const [mode, setMode] = useState<'set' | 'restore'>('set');
+    const [localError, setLocalError] = useState<string | null>(null);
 
     if (!isOpen) return null;
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
+        setLocalError(null);
         if (inputPin.length >= 4 && inputPin.length <= 6) {
             if (mode === 'set') {
+                const exists = await checkPinExists(inputPin);
+                if (exists) {
+                    setLocalError('⚠️ PIN занят! Переключись на "Восстановить"');
+                    // Optional: shake effect or auto-switch
+                    return;
+                }
                 onSetPin(inputPin);
                 onSync();
             } else {
@@ -61,13 +71,13 @@ export function PinModal({
                                 onClick={onSync}
                                 disabled={isLoading}
                             >
-                                {isLoading ? '⏳' : '☁️'} Синхронизировать
+                                {isLoading ? '⏳' : '☁️'} Обновить копию
                             </button>
                             <button
                                 className="pin-btn clear-btn"
                                 onClick={onClearPin}
                             >
-                                🗑️ Сбросить PIN
+                                🗑️ Выйти (Сброс)
                             </button>
                         </div>
                     </div>
@@ -76,13 +86,13 @@ export function PinModal({
                         <div className="pin-tabs">
                             <button
                                 className={`tab ${mode === 'set' ? 'active' : ''}`}
-                                onClick={() => setMode('set')}
+                                onClick={() => { setMode('set'); setLocalError(null); }}
                             >
                                 🆕 Новый PIN
                             </button>
                             <button
                                 className={`tab ${mode === 'restore' ? 'active' : ''}`}
-                                onClick={() => setMode('restore')}
+                                onClick={() => { setMode('restore'); setLocalError(null); }}
                             >
                                 📥 Восстановить
                             </button>
@@ -100,7 +110,10 @@ export function PinModal({
                             className="pin-input"
                             placeholder="1234"
                             value={inputPin}
-                            onChange={e => setInputPin(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                            onChange={e => {
+                                setInputPin(e.target.value.replace(/\D/g, '').slice(0, 6));
+                                setLocalError(null);
+                            }}
                             maxLength={6}
                             autoFocus
                         />
@@ -110,12 +123,12 @@ export function PinModal({
                             onClick={handleSubmit}
                             disabled={inputPin.length < 4 || isLoading}
                         >
-                            {isLoading ? '⏳ Загрузка...' : mode === 'set' ? '✓ Создать' : '📥 Загрузить'}
+                            {isLoading ? '⏳ Загрузка...' : mode === 'set' ? '✓ Создать' : '📥 Скачать'}
                         </button>
                     </div>
                 )}
 
-                {error && <div className="pin-error">{error}</div>}
+                {(error || localError) && <div className="pin-error">{localError || error}</div>}
             </div>
         </div>
     );
