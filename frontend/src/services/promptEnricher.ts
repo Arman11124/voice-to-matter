@@ -7,7 +7,7 @@ const SAFETY_MODIFIERS = [
     'solid thick walls',
     'flat bottom for 3D printing',
     'minimal overhangs',
-    'simple low-poly geometry',
+    'simple smooth geometry', // Removed "low-poly" to allow better textures
     'chunky proportions',
     'no thin fragile parts',
     'toy style',
@@ -15,6 +15,9 @@ const SAFETY_MODIFIERS = [
 ];
 
 const STYLE_MODIFIERS = [
+    'colorful', // Added to force color
+    'vibrant colors', // Added to force color
+    'high quality texture', // Added to force color
     '3D printable model',
     'single piece design',
     'smooth surfaces'
