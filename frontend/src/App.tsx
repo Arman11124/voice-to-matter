@@ -107,8 +107,6 @@ function App() {
           });
           if (hasNew) {
             console.log('✅ Auto-pulled new models from cloud');
-          } else {
-            console.log('💤 No new models in cloud');
           }
         }
       } catch (e) {
