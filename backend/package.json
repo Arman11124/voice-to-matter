@@ -10,6 +10,8 @@
     },
     "dependencies": {
         "cors": "^2.8.5",
+        "cura-wasm": "^1.5.2",
+        "cura-wasm-definitions": "^1.5.1",
         "dotenv": "^16.4.5",
         "express": "^4.21.2"
     },

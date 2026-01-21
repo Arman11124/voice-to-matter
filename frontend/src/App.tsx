@@ -19,6 +19,7 @@ import { useSlicer } from './hooks/useSlicer'; // NEW: Slicer hook
 
 import { enrichPrompt } from './services/promptEnricher';
 import { estimatePrint } from './services/gcodeGenerator';
+import { downloadAsStl } from './services/stlExporter';
 
 // Pipeline states
 type AppState = 'idle' | 'listening' | 'generating' | 'ready' | 'slicing' | 'printing' | 'done';
@@ -106,6 +107,11 @@ function App() {
   useEffect(() => {
     if (!cloudSync.pin) return;
     const intervalId = setInterval(async () => {
+      // Skip polling if sync is in progress (prevents ghost resurrection on delete)
+      if (isSyncingRef.current) {
+        console.log('💓 Polling skipped - sync in progress');
+        return;
+      }
       try {
         console.log(`💓 Polling cloud for PIN ${cloudSync.pin}...`);
         const remoteModels = await cloudSync.loadFromCloud();
@@ -181,6 +187,11 @@ function App() {
         // NEW GENERATION: Use text-to-model
         setCurrentPrompt(speech.transcript);
         const enrichedPrompt = enrichPrompt(speech.transcript);
+
+        // DEBUG: Show user what's being sent
+        console.log('🎤 SPEECH RECOGNIZED:', speech.transcript);
+        console.log('📤 ENRICHED PROMPT SENT TO API:', enrichedPrompt);
+
         modelUrl = await tripo.generate(enrichedPrompt);
       }
 
@@ -226,12 +237,12 @@ function App() {
 
       {/* Header */}
       <header className="header">
+        <button className="cloud-btn header-left" onClick={() => setShowPinModal(true)} title="Облачная синхронизация">
+          ☁️ {cloudSync.pin ? `PIN: ${cloudSync.pin}` : 'Синхро'}
+        </button>
         <h1>{t('app.title')}</h1>
         <p>{t('app.subtitle')}</p>
         <div className="header-buttons">
-          <button className="cloud-btn" onClick={() => setShowPinModal(true)} title="Облачная синхронизация">
-            ☁️ {cloudSync.pin ? `PIN: ${cloudSync.pin}` : 'Синхро'}
-          </button>
           <button className="lang-toggle" onClick={toggleLanguage}>
             {i18n.language === 'ru' ? '🇬🇧 EN' : '🇷🇺 RU'}
           </button>
@@ -257,12 +268,21 @@ function App() {
           <div className="error-message">{tripo.error}</div>
         )}
 
-        {/* Loading indicator */}
+        {/* Loading overlay - blocks all clicks during generation */}
         {appState === 'generating' && (
-          <div className="status-message">
-            <span className="status-icon">🎨</span>
-            <span>{t('voice.processing')}</span>
-            {tripo.progress > 0 && <span className="progress">{tripo.progress}%</span>}
+          <div className="generation-overlay">
+            <div className="generation-modal">
+              <div className="generation-icon">🎨</div>
+              <div className="generation-text">{t('voice.processing')}</div>
+              <div className="progress-bar-container">
+                <div
+                  className="progress-bar-fill"
+                  style={{ width: `${tripo.progress}%` }}
+                />
+              </div>
+              <div className="progress-percentage">{tripo.progress}%</div>
+              <div className="progress-hint">Пожалуйста, подождите...</div>
+            </div>
           </div>
         )}
 
@@ -330,6 +350,36 @@ function App() {
               {slicer.isSlicing ? `⚙️ Подготовка ${Math.round(slicer.progress)}%...` : '📱 Отправить в приложение'}
             </button>
             {slicer.error && <div className="error-message">{slicer.error}</div>}
+
+            {/* Debug: Download GLB for manual verification */}
+            {tripo.modelUrl && (
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '0.5rem' }}>
+                <a
+                  href={tripo.modelUrl}
+                  download={`${currentPrompt || 'model'}.glb`}
+                  style={{
+                    padding: '0.5rem',
+                    color: 'rgba(255,255,255,0.6)',
+                    fontSize: '0.8rem'
+                  }}
+                >
+                  📥 GLB
+                </a>
+                <button
+                  onClick={() => downloadAsStl(tripo.modelUrl!, currentPrompt || 'model')}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: '0.5rem',
+                    color: 'rgba(255,255,255,0.6)',
+                    fontSize: '0.8rem',
+                    cursor: 'pointer'
+                  }}
+                >
+                  📥 STL (для Kiri)
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -372,23 +422,39 @@ function App() {
             setPrintEstimate({ minutes: estimate.estimatedMinutes, layers: estimate.layers });
           }}
           onDelete={(id) => {
+            // Lock polling to prevent ghost resurrection
+            isSyncingRef.current = true;
+
             // 1. Delete locally
             savedModels.deleteModel(id);
 
-            // 2. Force Sync to Cloud immediately (to prevent "Ghost Resurrection" on next pull)
-            // We filter manually here because state update is async
+            // 2. Force Sync to Cloud immediately
             const remainingModels = savedModels.models.filter(m => m.id !== id);
             if (cloudSync.pin) {
-              cloudSync.syncToCloud(remainingModels);
+              cloudSync.syncToCloud(remainingModels).finally(() => {
+                isSyncingRef.current = false;
+              });
+            } else {
+              isSyncingRef.current = false;
+            }
+          }}
+          onRename={(id, newName) => {
+            savedModels.renameModel(id, newName);
+            // Sync renamed model to cloud
+            if (cloudSync.pin) {
+              const updatedModels = savedModels.models.map(m =>
+                m.id === id ? { ...m, prompt: newName } : m
+              );
+              cloudSync.syncToCloud(updatedModels);
             }
           }}
         />
       </main>
 
-      {/* Browser support warning */}
+      {/* Browser support warning - now inline, not fixed */}
       {!speech.isSupported && (
         <div className="browser-warning">
-          ⚠️ Используй Chrome или Edge для голосового управления
+          ⚠️ Chrome / Edge для голоса
         </div>
       )}
 

@@ -21,6 +21,7 @@ router.post('/generate', async (req: Request, res: Response) => {
         }
 
         console.log(`🎨 Generating 3D model for: "${prompt}"`);
+        console.log(`📝 FULL PROMPT BEING SENT TO TRIPO:`, JSON.stringify(prompt));
 
         const response = await fetch(`${TRIPO_API_BASE}/task`, {
             method: 'POST',

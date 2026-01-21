@@ -5,9 +5,10 @@ interface SavedModelsGalleryProps {
     models: SavedModel[];
     onSelect: (model: SavedModel) => void;
     onDelete: (id: string) => void;
+    onRename: (id: string, newName: string) => void;
 }
 
-export function SavedModelsGallery({ models, onSelect, onDelete }: SavedModelsGalleryProps) {
+export function SavedModelsGallery({ models, onSelect, onDelete, onRename }: SavedModelsGalleryProps) {
     if (models.length === 0) {
         return null;
     }
@@ -18,6 +19,13 @@ export function SavedModelsGallery({ models, onSelect, onDelete }: SavedModelsGa
             day: 'numeric',
             month: 'short'
         });
+    };
+
+    const handleRename = (model: SavedModel) => {
+        const newName = window.prompt('Новое название:', model.prompt);
+        if (newName && newName.trim() && newName !== model.prompt) {
+            onRename(model.id, newName.trim());
+        }
     };
 
     return (
@@ -39,6 +47,16 @@ export function SavedModelsGallery({ models, onSelect, onDelete }: SavedModelsGa
                         </div>
                         <div className="card-actions">
                             <button
+                                className="action-btn rename-btn"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRename(model);
+                                }}
+                                title="Переименовать"
+                            >
+                                ✏️
+                            </button>
+                            <button
                                 className="action-btn print-btn"
                                 onClick={() => onSelect(model)}
                                 title="Открыть для печати"
@@ -49,7 +67,7 @@ export function SavedModelsGallery({ models, onSelect, onDelete }: SavedModelsGa
                                 className="action-btn delete-btn"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (window.confirm('Точно удалить эту модель?')) {
+                                    if (window.confirm('Удалить эту модель?')) {
                                         onDelete(model.id);
                                     }
                                 }}

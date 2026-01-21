@@ -6,11 +6,10 @@
 const SAFETY_MODIFIERS = [
     'solid thick walls',
     'minimal overhangs',
-    // 'simple smooth geometry', // Removed: causes blocky shapes
-    'organic sculpted forms', // NEW
+    'organic sculpted forms',
     'no thin fragile parts',
-    'figurine style', // Changed from "toy style" (too simple)
-    'character design aesthetic' // Changed from "cartoon"
+    'figurine style',
+    'character design aesthetic'
 ];
 
 const STYLE_MODIFIERS = [
@@ -20,8 +19,8 @@ const STYLE_MODIFIERS = [
     '3D printable model',
     'single piece design',
     'smooth surfaces',
-    'high fidelity', // NEW
-    'detailed'      // NEW
+    'high fidelity',
+    'detailed'
 ];
 
 // Command words to remove

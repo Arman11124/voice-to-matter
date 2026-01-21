@@ -14,6 +14,7 @@ interface UseSavedModelsReturn {
     models: SavedModel[];
     saveModel: (prompt: string, modelUrl: string, thumbnail?: string, id?: string, createdAt?: number) => void;
     deleteModel: (id: string) => void;
+    renameModel: (id: string, newName: string) => void;
     clearAll: () => void;
 }
 
@@ -61,6 +62,12 @@ export function useSavedModels(): UseSavedModelsReturn {
         setModels(prev => prev.filter(m => m.id !== id));
     }, []);
 
+    const renameModel = useCallback((id: string, newName: string) => {
+        setModels(prev => prev.map(m =>
+            m.id === id ? { ...m, prompt: newName } : m
+        ));
+    }, []);
+
     const clearAll = useCallback(() => {
         setModels([]);
     }, []);
@@ -69,6 +76,7 @@ export function useSavedModels(): UseSavedModelsReturn {
         models,
         saveModel,
         deleteModel,
+        renameModel,
         clearAll
     };
 }

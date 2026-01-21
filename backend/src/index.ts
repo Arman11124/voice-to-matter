@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import tripoRoutes from './routes/tripo';
 import syncRoutes from './routes/sync';
+import sliceRoutes from './routes/slice';
 
 // Load .env from backend directory
 dotenv.config({ path: path.join(process.cwd(), '.env') });
@@ -19,11 +20,12 @@ app.use(cors({
     methods: ['GET', 'POST', 'HEAD'],
     allowedHeaders: ['Content-Type']
 }));
-app.use(express.json({ limit: '10mb' })); // Increase limit for model data
+app.use(express.json({ limit: '50mb' })); // Increased limit for STL data
 
 // Routes
 app.use('/api', tripoRoutes);
 app.use('/api/sync', syncRoutes);
+app.use('/api/slice', sliceRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
