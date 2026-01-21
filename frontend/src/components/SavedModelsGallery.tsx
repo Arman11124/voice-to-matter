@@ -49,7 +49,9 @@ export function SavedModelsGallery({ models, onSelect, onDelete }: SavedModelsGa
                                 className="action-btn delete-btn"
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    onDelete(model.id);
+                                    if (window.confirm('Точно удалить эту модель?')) {
+                                        onDelete(model.id);
+                                    }
                                 }}
                                 title="Удалить"
                             >

@@ -343,20 +343,21 @@ function App() {
           </div>
         )}
 
-        {/* Printer Panel (Hidden on mobile if unsupported to avoid confusion) */}
-        <PrinterPanel
-          status={serial.status}
-          progress={serial.progress}
-          error={serial.error}
-          isSupported={serial.isSupported}
-          onConnect={serial.connect}
-          onDisconnect={serial.disconnect}
-          onPrint={() => {
-            if (gcode) serial.print(gcode);
-          }}
-          canPrint={!!gcode && appState === 'ready'}
-          hideUnsupportedError={!serial.isSupported} // Always hide "Use Chrome" on mobile, we have App button!
-        />
+        {/* Printer Panel (Only show on Desktop/Supported browsers) */}
+        {serial.isSupported && (
+          <PrinterPanel
+            status={serial.status}
+            progress={serial.progress}
+            error={serial.error}
+            isSupported={serial.isSupported}
+            onConnect={serial.connect}
+            onDisconnect={serial.disconnect}
+            onPrint={() => {
+              if (gcode) serial.print(gcode);
+            }}
+            canPrint={!!gcode && appState === 'ready'}
+          />
+        )}
 
         {/* Done message */}
         {appState === 'done' && (
