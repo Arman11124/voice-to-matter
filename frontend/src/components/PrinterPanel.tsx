@@ -1,3 +1,4 @@
+
 import { useTranslation } from 'react-i18next';
 import './PrinterPanel.css';
 
@@ -12,6 +13,7 @@ interface PrinterPanelProps {
     onDisconnect: () => void;
     onPrint: () => void;
     canPrint: boolean;
+    hideUnsupportedError?: boolean;
 }
 
 export function PrinterPanel({
@@ -22,7 +24,8 @@ export function PrinterPanel({
     onConnect,
     onDisconnect,
     onPrint,
-    canPrint
+    canPrint,
+    hideUnsupportedError = false
 }: PrinterPanelProps) {
     const { t } = useTranslation();
 
@@ -47,6 +50,8 @@ export function PrinterPanel({
     };
 
     if (!isSupported) {
+        if (hideUnsupportedError) return null;
+
         return (
             <div className="printer-panel not-supported">
                 <span className="status-icon">⚠️</span>
