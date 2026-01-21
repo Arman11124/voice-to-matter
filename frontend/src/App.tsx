@@ -56,6 +56,38 @@ function App() {
     setAppState('listening');
   }, [appState, speech, tripo]);
 
+  // Auto-sync models to cloud when they change (debounced)
+  const isSyncingRef = useRef(false);
+  useState(() => {
+    // Only separate this effect to keep file clean
+  });
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const debouncedSync = useCallback(
+    (() => {
+      let timeoutId: NodeJS.Timeout;
+      return () => {
+        if (timeoutId) clearTimeout(timeoutId);
+        timeoutId = setTimeout(async () => {
+          if (cloudSync.pin && savedModels.models.length > 0 && !isSyncingRef.current) {
+            isSyncingRef.current = true;
+            try {
+              await cloudSync.syncToCloud(savedModels.models);
+            } finally {
+              isSyncingRef.current = false;
+            }
+          }
+        }, 2000);
+      };
+    })(),
+    [cloudSync.pin, savedModels.models, cloudSync.syncToCloud]
+  );
+
+  // Trigger auto-sync
+  if (cloudSync.pin && savedModels.models.length > 0) {
+    debouncedSync();
+  }
+
   // Capture screenshot from model-viewer
   const captureScreenshot = useCallback(async (): Promise<string | null> => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
