@@ -32,6 +32,11 @@ const SKIP_WORDS = new Set([
 // Large dictionary mapping Russian stems to English
 // Using stems allows coverage of cases (кошка, кошку, кошке -> кош)
 const RU_TO_EN: Record<string, string> = {
+    // --- ACTIONS/MODIFIERS (ДЕЙСТВИЯ) ---
+    'дорисуй': 'add', 'добав': 'add', 'приделай': 'add',
+    'с': 'with', 'со': 'with', 'без': 'without',
+    'ему': '', 'ей': '', 'им': '', // pronouns to ignore
+
     // --- ANIMALS (ЖИВОТНЫЕ) ---
     'кош': 'cat', 'кот': 'cat', 'кис': 'cat',
     'собак': 'dog', 'пес': 'dog', 'пёс': 'dog', 'щен': 'puppy',
@@ -96,6 +101,10 @@ const RU_TO_EN: Record<string, string> = {
     'пингвин': 'penguin',
     'утк': 'duck', 'уточе': 'duck',
     'гус': 'goose',
+    'крыл': 'wings', 'крыль': 'wings', 'пер': 'feathers',
+    'клюв': 'beak',
+    'хвост': 'tail', 'лап': 'paws',
+    'рог': 'horns', 'рожк': 'horns',
     'лебед': 'swan',
     'фламинго': 'flamingo',
     'павлин': 'peacock',
