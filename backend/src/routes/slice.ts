@@ -11,6 +11,16 @@ const router = express.Router();
 // Kobra 2 Pro slicer settings (Kinder Surprise style - hollow with thick walls)
 // Format: { scope: 'e0' | undefined, key: 'setting_name', value: 'string_value' }
 const KOBRA_2_PRO_OVERRIDES = [
+    // CRITICAL Machine settings (required by CuraEngine)
+    { scope: undefined, key: 'machine_extruder_count', value: '1' },
+    { scope: undefined, key: 'machine_nozzle_size', value: '0.4' },
+    { scope: undefined, key: 'machine_heated_bed', value: 'true' },
+    { scope: undefined, key: 'machine_center_is_zero', value: 'false' },
+    { scope: undefined, key: 'machine_gcode_flavor', value: 'Marlin' },
+
+    // Filament
+    { scope: undefined, key: 'material_diameter', value: '1.75' },
+
     // Quality
     { scope: undefined, key: 'layer_height', value: '0.2' },
     { scope: undefined, key: 'layer_height_0', value: '0.3' },
