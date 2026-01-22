@@ -5,7 +5,7 @@
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
 
-const BACKEND_URL = import.meta.env.VITE_API_URL || 'https://loud-kathy-arman-6e0890ac.koyeb.app';
+const BACKEND_URL = import.meta.env.VITE_API_URL || 'https://spotlight-interior-medical-carey.trycloudflare.com';
 
 /**
  * Convert GLB URL to STL ArrayBuffer
