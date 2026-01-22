@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { SavedModel } from './useSavedModels';
 
-const API_BASE = 'https://frederick-weights-wider-triangle.trycloudflare.com';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://157.245.32.26:3001';
 const PIN_STORAGE_KEY = 'voice-to-matter-pin';
 
 interface UseCloudSyncReturn {
