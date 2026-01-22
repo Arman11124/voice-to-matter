@@ -3,10 +3,18 @@
  * Converts STL/GLB to G-code with Kobra 2 Pro profile
  */
 import express from 'express';
+import cors from 'cors';
 import { CuraWASM } from 'cura-wasm';
 import { resolveDefinition } from 'cura-wasm-definitions';
 
 const router = express.Router();
+
+// Explicit CORS for slice endpoint
+router.use(cors({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type']
+}));
 
 // Kobra 2 Pro slicer settings (Kinder Surprise style - hollow with thick walls)
 // Format: { scope: 'e0' | undefined, key: 'setting_name', value: 'string_value' }

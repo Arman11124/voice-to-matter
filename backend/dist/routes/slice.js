@@ -8,9 +8,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
  * Converts STL/GLB to G-code with Kobra 2 Pro profile
  */
 const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
 const cura_wasm_1 = require("cura-wasm");
 const cura_wasm_definitions_1 = require("cura-wasm-definitions");
 const router = express_1.default.Router();
+// Explicit CORS for slice endpoint
+router.use((0, cors_1.default)({
+    origin: '*',
+    methods: ['GET', 'POST', 'OPTIONS'],
+    allowedHeaders: ['Content-Type']
+}));
 // Kobra 2 Pro slicer settings (Kinder Surprise style - hollow with thick walls)
 // Format: { scope: 'e0' | undefined, key: 'setting_name', value: 'string_value' }
 const KOBRA_2_PRO_OVERRIDES = [
