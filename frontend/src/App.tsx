@@ -116,16 +116,9 @@ function App() {
         console.log(`💓 Polling cloud for PIN ${cloudSync.pin}...`);
         const remoteModels = await cloudSync.loadFromCloud();
         if (remoteModels) {
-          let hasNew = false;
-          remoteModels.forEach(m => {
-            if (!savedModels.models.find(local => local.id === m.id)) {
-              savedModels.saveModel(m.prompt, m.modelUrl, m.thumbnail, m.id, m.createdAt);
-              hasNew = true;
-            }
-          });
-          if (hasNew) {
-            console.log('✅ Auto-pulled new models from cloud');
-          }
+          console.log(`☁️ Loaded from cloud: ${remoteModels.length} models`);
+          // Auto-pull disabled - only sync on explicit load
+          // This prevents deleted models from reappearing
         }
       } catch (e) {
         console.error("Polling error", e);
