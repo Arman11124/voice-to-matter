@@ -307,13 +307,7 @@ function App() {
             >
               💾 Сохранить
             </button>
-            <button
-              className="control-btn refine-btn"
-              onClick={() => handleVoicePress(true)}
-              title="Улучшить модель (Image-to-3D)"
-            >
-              ✨ Дорисовать
-            </button>
+
             <button
               className="control-btn reset-btn"
               onClick={() => {
