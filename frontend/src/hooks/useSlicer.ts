@@ -3,7 +3,7 @@
  * Fallback: naive realSlicer if Kiri not loaded
  */
 import { useState, useCallback } from 'react';
-import { sliceWithKiri, isKiriAvailable } from '../services/slicer/kiriSlicerService';
+import { sliceWithKiri } from '../services/slicer/kiriSlicerService';
 import { sliceModelReal } from '../services/slicer/realSlicer';
 import { shareGcode } from '../services/slicer/fileShare';
 
@@ -21,25 +21,19 @@ export function useSlicer() {
         try {
             let gcode: string;
 
-            // Try Kiri:Moto browser slicer first (professional quality)
-            if (isKiriAvailable()) {
-                console.log('🔪 Using Kiri:Moto browser slicer (professional)');
-                setSlicerEngine('kiri');
+            // Try Kiri:Moto browser slicer first (has internal wait for loading)
+            console.log('🔪 Trying Kiri:Moto browser slicer...');
+            setSlicerEngine('kiri');
 
-                try {
-                    const result = await sliceWithKiri(modelUrl, filename, setProgress);
-                    gcode = result.gcode;
-                } catch (kiriError) {
-                    // Kiri failed - fallback to naive slicer
-                    console.warn('⚠️ Kiri:Moto failed, using fallback:', kiriError);
-                    setSlicerEngine('fallback');
-                    setProgress(10);
-                    gcode = await sliceModelReal(modelUrl, setProgress);
-                }
-            } else {
-                // Kiri not available - use fallback
-                console.log('⚠️ Kiri:Moto not loaded, using fallback slicer');
+            try {
+                const result = await sliceWithKiri(modelUrl, filename, setProgress);
+                gcode = result.gcode;
+                console.log('✅ Kiri:Moto slicing complete');
+            } catch (kiriError) {
+                // Kiri failed - fallback to naive slicer
+                console.warn('⚠️ Kiri:Moto failed, using fallback:', kiriError);
                 setSlicerEngine('fallback');
+                setProgress(10);
                 gcode = await sliceModelReal(modelUrl, setProgress);
             }
 

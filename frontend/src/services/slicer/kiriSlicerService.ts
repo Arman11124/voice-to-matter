@@ -180,6 +180,24 @@ export function isKiriAvailable(): boolean {
 }
 
 /**
+ * Wait for Kiri:Moto to become available (with timeout)
+ */
+async function waitForKiri(timeoutMs: number = 5000): Promise<boolean> {
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeoutMs) {
+        if (isKiriAvailable()) {
+            console.log('✅ Kiri:Moto engine ready');
+            return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    console.warn('⚠️ Kiri:Moto not loaded after timeout');
+    return false;
+}
+
+/**
  * Slice GLB model using Kiri:Moto browser engine
  */
 export async function sliceWithKiri(
@@ -187,7 +205,10 @@ export async function sliceWithKiri(
     _filename: string,
     onProgress?: (percent: number) => void
 ): Promise<SliceResult> {
-    if (!isKiriAvailable()) {
+    // Wait for Kiri:Moto to load (up to 5 seconds)
+    const kiriReady = await waitForKiri(5000);
+
+    if (!kiriReady) {
         throw new Error('Kiri:Moto engine not loaded');
     }
 
