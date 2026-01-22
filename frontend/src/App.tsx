@@ -79,18 +79,7 @@ function App() {
       if (isSyncingRef.current) return;
       isSyncingRef.current = true;
       try {
-        // Safe Auto-Sync: Pull -> Merge -> Push
-        const remoteModels = await cloudSync.loadFromCloud();
-        if (remoteModels) {
-          // Merge remote into local
-          remoteModels.forEach(m => {
-            if (!savedModels.models.find(local => local.id === m.id)) {
-              savedModels.saveModel(m.prompt, m.modelUrl, m.thumbnail, m.id, m.createdAt);
-            }
-          });
-        }
-
-        // If we have local models that aren't in remote (or if we just merged), push everything
+        // Only PUSH local to cloud - no pulling (prevents ghost resurrection)
         await cloudSync.syncToCloud(savedModels.models);
       } catch (e) {
         console.error("Auto-sync error", e);
@@ -101,7 +90,7 @@ function App() {
 
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [cloudSync.pin, savedModels.models, cloudSync.syncToCloud, cloudSync.loadFromCloud]);
+  }, [cloudSync.pin, savedModels.models, cloudSync.syncToCloud]);
 
   // POLL for changes from other devices every 10 seconds (heartbeat)
   useEffect(() => {
