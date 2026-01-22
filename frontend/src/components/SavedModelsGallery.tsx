@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import type { SavedModel } from '../hooks/useSavedModels';
 import './SavedModelsGallery.css';
 
@@ -9,6 +10,8 @@ interface SavedModelsGalleryProps {
 }
 
 export function SavedModelsGallery({ models, onSelect, onDelete, onRename }: SavedModelsGalleryProps) {
+    const [pendingDeleteId, setPendingDeleteId] = useState<string | null>(null);
+
     if (models.length === 0) {
         return null;
     }
@@ -25,6 +28,21 @@ export function SavedModelsGallery({ models, onSelect, onDelete, onRename }: Sav
         const newName = window.prompt('Новое название:', model.prompt);
         if (newName && newName.trim() && newName !== model.prompt) {
             onRename(model.id, newName.trim());
+        }
+    };
+
+    const handleDeleteClick = (modelId: string) => {
+        if (pendingDeleteId === modelId) {
+            // Second click - confirm delete
+            onDelete(modelId);
+            setPendingDeleteId(null);
+        } else {
+            // First click - show confirmation
+            setPendingDeleteId(modelId);
+            // Auto-reset after 3 seconds
+            setTimeout(() => {
+                setPendingDeleteId((current) => current === modelId ? null : current);
+            }, 3000);
         }
     };
 
@@ -64,16 +82,14 @@ export function SavedModelsGallery({ models, onSelect, onDelete, onRename }: Sav
                                 🖨️
                             </button>
                             <button
-                                className="action-btn delete-btn"
+                                className={`action-btn delete-btn ${pendingDeleteId === model.id ? 'confirm-delete' : ''}`}
                                 onClick={(e) => {
                                     e.stopPropagation();
-                                    if (window.confirm('Удалить эту модель?')) {
-                                        onDelete(model.id);
-                                    }
+                                    handleDeleteClick(model.id);
                                 }}
-                                title="Удалить"
+                                title={pendingDeleteId === model.id ? "Нажми ещё раз для удаления!" : "Удалить"}
                             >
-                                ✕
+                                {pendingDeleteId === model.id ? '✓ Удалить?' : '✕'}
                             </button>
                         </div>
                     </div>
