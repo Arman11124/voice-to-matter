@@ -4,8 +4,10 @@
  * No server required - runs entirely in browser via WebWorker
  */
 
+import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 // Kobra 2 Pro device settings for Kiri:Moto
 const KOBRA_2_PRO_DEVICE = {
@@ -15,15 +17,15 @@ const KOBRA_2_PRO_DEVICE = {
     nozzleSize: 0.4,
     filamentSize: 1.75,
     deviceZMax: 250,
+    originCenter: false,
     gcodePre: [
         'G28 ; Home all axes',
-        'G29 ; Auto bed leveling',
         'M104 S200 ; Set nozzle temp',
         'M140 S60 ; Set bed temp',
         'M109 S200 ; Wait for nozzle',
         'M190 S60 ; Wait for bed',
         'G92 E0 ; Reset extruder'
-    ].join('\\n'),
+    ].join('\n'),
     gcodePost: [
         'G91 ; Relative positioning',
         'G1 E-2 F2700 ; Retract',
@@ -33,25 +35,25 @@ const KOBRA_2_PRO_DEVICE = {
         'M104 S0 ; Turn off hotend',
         'M140 S0 ; Turn off bed',
         'M84 ; Disable motors'
-    ].join('\\n')
+    ].join('\n')
 };
 
 // Kinder Surprise process settings (hollow with thick walls)
 const KINDER_PROCESS = {
     sliceHeight: 0.2,          // Layer height
-    sliceShells: 3,            // Wall line count (3 = ~1.2mm)
+    sliceShells: 3,            // Wall line count
     sliceTopLayers: 3,         // Top layers
     sliceBottomLayers: 3,      // Bottom layers
     sliceFillSparse: 0,        // 0% infill (hollow)
     sliceSupportEnable: true,  // Auto supports
     sliceSupportDensity: 0.15, // Support density
     firstSliceHeight: 0.3,     // First layer height
-    outputFeedrate: 100,       // Print speed mm/s
-    outputSeekrate: 150,       // Travel speed mm/s
+    outputFeedrate: 60,        // Print speed mm/s
+    outputSeekrate: 100,       // Travel speed mm/s
     outputTemp: 200,           // Nozzle temp
     outputBedTemp: 60,         // Bed temp
     outputRetractDist: 5,      // Retraction distance
-    outputRetractSpeed: 45     // Retraction speed
+    outputRetractSpeed: 45,    // Retraction speed
 };
 
 // Global type for Kiri:Moto engine
@@ -94,6 +96,7 @@ export interface SliceResult {
 
 /**
  * Convert GLB model URL to STL ArrayBuffer
+ * Properly handles complex scenes by merging all meshes
  */
 async function glbToStl(glbUrl: string): Promise<ArrayBuffer> {
     const loader = new GLTFLoader();
@@ -101,10 +104,65 @@ async function glbToStl(glbUrl: string): Promise<ArrayBuffer> {
         loader.load(glbUrl, resolve, undefined, reject);
     });
 
+    // Update world matrices for proper transforms
     gltf.scene.updateMatrixWorld(true);
 
+    // Collect all geometries with applied transforms
+    const geometries: THREE.BufferGeometry[] = [];
+
+    gltf.scene.traverse((child: THREE.Object3D) => {
+        if ((child as THREE.Mesh).isMesh) {
+            const mesh = child as THREE.Mesh;
+            const geometry = mesh.geometry.clone();
+
+            // Apply world transform to geometry
+            geometry.applyMatrix4(mesh.matrixWorld);
+
+            geometries.push(geometry);
+        }
+    });
+
+    if (geometries.length === 0) {
+        throw new Error('No meshes found in model');
+    }
+
+    console.log(`📐 Found ${geometries.length} meshes, merging...`);
+
+    // Merge all geometries into one
+    const mergedGeometry = mergeGeometries(geometries, false);
+
+    if (!mergedGeometry) {
+        throw new Error('Failed to merge geometries');
+    }
+
+    // Center the geometry on XY and place on Z=0
+    mergedGeometry.computeBoundingBox();
+    const bbox = mergedGeometry.boundingBox!;
+    const center = new THREE.Vector3();
+    bbox.getCenter(center);
+
+    // Move to center of bed and bottom at Z=0
+    mergedGeometry.translate(-center.x, -center.y, -bbox.min.z);
+
+    // Scale if too big for bed (220x220x250)
+    const size = new THREE.Vector3();
+    bbox.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    if (maxDim > 200) {
+        const scale = 200 / maxDim;
+        mergedGeometry.scale(scale, scale, scale);
+        console.log(`📏 Scaled model by ${(scale * 100).toFixed(0)}% to fit bed`);
+    }
+
+    // Create a temporary mesh for STL export
+    const tempMesh = new THREE.Mesh(mergedGeometry);
+
     const exporter = new STLExporter();
-    const stlResult = exporter.parse(gltf.scene, { binary: true });
+    const stlResult = exporter.parse(tempMesh, { binary: true });
+
+    // Cleanup
+    mergedGeometry.dispose();
+    geometries.forEach(g => g.dispose());
 
     if (stlResult instanceof DataView) {
         return stlResult.buffer;
@@ -136,7 +194,7 @@ export async function sliceWithKiri(
     const startTime = Date.now();
     onProgress?.(5);
 
-    // Convert GLB to STL
+    // Convert GLB to STL with proper geometry handling
     console.log('🔄 Converting GLB to STL for Kiri:Moto...');
     const stlBuffer = await glbToStl(modelUrl);
     console.log(`📦 STL size: ${(stlBuffer.byteLength / 1024).toFixed(1)} KB`);
