@@ -1,8 +1,9 @@
 /**
- * Slicer Hook - Uses fast naive slicer
- * CuraEngine disabled due to VPS performance limitations
+ * Slicer Hook - Uses Kiri:Moto browser slicer (primary)
+ * Fallback: naive realSlicer if Kiri not loaded
  */
 import { useState, useCallback } from 'react';
+import { sliceWithKiri, isKiriAvailable } from '../services/slicer/kiriSlicerService';
 import { sliceModelReal } from '../services/slicer/realSlicer';
 import { shareGcode } from '../services/slicer/fileShare';
 
@@ -10,7 +11,7 @@ export function useSlicer() {
     const [isSlicing, setIsSlicing] = useState(false);
     const [progress, setProgress] = useState(0);
     const [error, setError] = useState<string | null>(null);
-    const [slicerEngine, setSlicerEngine] = useState<'cura' | 'fallback' | null>(null);
+    const [slicerEngine, setSlicerEngine] = useState<'kiri' | 'fallback' | null>(null);
 
     const sliceAndShare = useCallback(async (modelUrl: string, filename: string) => {
         setIsSlicing(true);
@@ -18,10 +19,29 @@ export function useSlicer() {
         setError(null);
 
         try {
-            // Use fast naive slicer (CuraEngine disabled - too slow on VPS)
-            console.log('🔪 Using fast slicer');
-            setSlicerEngine('fallback');
-            const gcode = await sliceModelReal(modelUrl, setProgress);
+            let gcode: string;
+
+            // Try Kiri:Moto browser slicer first (professional quality)
+            if (isKiriAvailable()) {
+                console.log('🔪 Using Kiri:Moto browser slicer (professional)');
+                setSlicerEngine('kiri');
+
+                try {
+                    const result = await sliceWithKiri(modelUrl, filename, setProgress);
+                    gcode = result.gcode;
+                } catch (kiriError) {
+                    // Kiri failed - fallback to naive slicer
+                    console.warn('⚠️ Kiri:Moto failed, using fallback:', kiriError);
+                    setSlicerEngine('fallback');
+                    setProgress(10);
+                    gcode = await sliceModelReal(modelUrl, setProgress);
+                }
+            } else {
+                // Kiri not available - use fallback
+                console.log('⚠️ Kiri:Moto not loaded, using fallback slicer');
+                setSlicerEngine('fallback');
+                gcode = await sliceModelReal(modelUrl, setProgress);
+            }
 
             // Share G-code to Anycubic App
             setProgress(95);
