@@ -30,15 +30,9 @@ function App() {
   const [gcode, setGcode] = useState<string | null>(null);
   const [printEstimate, setPrintEstimate] = useState<{ minutes: number; layers: number } | null>(null);
 
-  // AI Provider selection (saved to localStorage)
-  const [aiProvider, setAiProvider] = useState<'tripo' | 'meshy'>(() => {
-    const saved = localStorage.getItem('voice-to-matter-ai-provider');
-    return (saved === 'meshy' ? 'meshy' : 'tripo');
-  });
-
   // Hooks
   const speech = useSpeechRecognition();
-  const tripo = useTripoAI(aiProvider);  // Pass provider to hook
+  const tripo = useTripoAI();
   const [isSaving, setIsSaving] = useState(false);
 
   const serial = useWebSerial();
@@ -53,12 +47,7 @@ function App() {
   // State for STL export
   const [isExporting, setIsExporting] = useState(false);
 
-  // Toggle AI provider
-  const toggleAiProvider = () => {
-    const newProvider = aiProvider === 'tripo' ? 'meshy' : 'tripo';
-    setAiProvider(newProvider);
-    localStorage.setItem('voice-to-matter-ai-provider', newProvider);
-  };
+
 
   // Share STL to Anycubic Slicer Next via Share API
   const handleShareToSlicer = async () => {
@@ -272,29 +261,9 @@ function App() {
         </button>
         <h1>{t('app.title')}</h1>
         <p>{t('app.subtitle')}</p>
-        <div className="header-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', alignItems: 'flex-end' }}>
-          <button className="lang-toggle" onClick={toggleLanguage}>
-            {i18n.language === 'ru' ? '🇬🇧 EN' : '🇷🇺 RU'}
-          </button>
-          {/* AI Provider Toggle - below language */}
-          <button
-            className="ai-toggle"
-            onClick={toggleAiProvider}
-            title={`Сейчас: ${aiProvider === 'tripo' ? 'Tripo AI (платный)' : 'Meshy AI (бесплатный)'}`}
-            style={{
-              background: aiProvider === 'tripo' ? '#6c5ce7' : '#00b894',
-              color: 'white',
-              border: 'none',
-              padding: '0.35rem 0.6rem',
-              borderRadius: '8px',
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              marginTop: '1rem'
-            }}
-          >
-            {aiProvider === 'tripo' ? '🚀 Tripo' : '🆓 Meshy'}
-          </button>
-        </div>
+        <button className="lang-toggle" onClick={toggleLanguage}>
+          {i18n.language === 'ru' ? '🇬🇧 EN' : '🇷🇺 RU'}
+        </button>
       </header>
 
       {/* Main content */}

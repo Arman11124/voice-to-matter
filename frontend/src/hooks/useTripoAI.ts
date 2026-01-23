@@ -4,7 +4,6 @@ import { useState, useCallback } from 'react';
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
-export type AIProvider = 'tripo' | 'meshy';
 
 interface UseTripoAIReturn {
     status: GenerationStatus;
@@ -17,22 +16,18 @@ interface UseTripoAIReturn {
     reset: () => void;
 }
 
-export function useTripoAI(provider: AIProvider = 'tripo'): UseTripoAIReturn {
+export function useTripoAI(): UseTripoAIReturn {
     const [status, setStatus] = useState<GenerationStatus>('idle');
     const [progress, setProgress] = useState(0);
     const [modelUrl, setModelUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const pollStatus = useCallback(async (taskId: string): Promise<string> => {
-        const maxAttempts = 90; // 3 minutes max for Meshy (can be slower)
+        const maxAttempts = 60; // 2 minutes max
         let attempts = 0;
 
         while (attempts < maxAttempts) {
-            const statusPath = provider === 'meshy'
-                ? `${API_BASE}/api/meshy/status/${taskId}`
-                : `${API_BASE}/api/status/${taskId}`;
-
-            const response = await fetch(statusPath);
+            const response = await fetch(`${API_BASE}/api/status/${taskId}`);
             const data = await response.json();
 
             if (!response.ok) {
@@ -55,7 +50,7 @@ export function useTripoAI(provider: AIProvider = 'tripo'): UseTripoAIReturn {
         }
 
         throw new Error('Generation timed out');
-    }, [provider]);
+    }, []);
 
     const generate = useCallback(async (prompt: string): Promise<string | null> => {
         setStatus('generating');
@@ -64,14 +59,10 @@ export function useTripoAI(provider: AIProvider = 'tripo'): UseTripoAIReturn {
         setError(null);
 
         try {
-            console.log(`🚀 [${provider.toUpperCase()}] Starting generation with prompt:`, prompt);
+            console.log('🚀 [TRIPO] Starting generation with prompt:', prompt);
 
             // Step 1: Create task
-            const generatePath = provider === 'meshy'
-                ? `${API_BASE}/api/meshy/generate`
-                : `${API_BASE}/api/generate`;
-
-            const createResponse = await fetch(generatePath, {
+            const createResponse = await fetch(`${API_BASE}/api/generate`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt })
@@ -84,7 +75,7 @@ export function useTripoAI(provider: AIProvider = 'tripo'): UseTripoAIReturn {
             }
 
             const { taskId } = createData;
-            console.log(`📋 [${provider.toUpperCase()}] Task created:`, taskId);
+            console.log('📋 [TRIPO] Task created:', taskId);
 
             // Step 2: Poll for completion
             const originalUrl = await pollStatus(taskId);
@@ -92,7 +83,7 @@ export function useTripoAI(provider: AIProvider = 'tripo'): UseTripoAIReturn {
             // Use proxy to avoid CORS issues with model-viewer
             const proxiedUrl = `${API_BASE}/api/model-proxy?url=${encodeURIComponent(originalUrl)}`;
 
-            console.log(`✅ [${provider.toUpperCase()}] Model ready:`, originalUrl);
+            console.log('✅ [TRIPO] Model ready:', originalUrl);
             setModelUrl(proxiedUrl);
             setStatus('success');
             setProgress(100);
@@ -100,19 +91,15 @@ export function useTripoAI(provider: AIProvider = 'tripo'): UseTripoAIReturn {
             return proxiedUrl;
 
         } catch (e) {
-            console.error(`[${provider.toUpperCase()}] Generation error:`, e);
+            console.error('[TRIPO] Generation error:', e);
             setError(e instanceof Error ? e.message : 'Unknown error');
             setStatus('error');
             return null;
         }
-    }, [provider, pollStatus]);
+    }, [pollStatus]);
 
-    // Refine existing model using screenshot + new prompt (Tripo only for now)
+    // Refine existing model using screenshot + new prompt
     const refine = useCallback(async (imageBase64: string, prompt: string): Promise<string | null> => {
-        if (provider === 'meshy') {
-            setError('Refinement not supported with Meshy AI');
-            return null;
-        }
 
         setStatus('generating');
         setProgress(0);
@@ -172,7 +159,7 @@ export function useTripoAI(provider: AIProvider = 'tripo'): UseTripoAIReturn {
             setStatus('error');
             return null;
         }
-    }, [provider, pollStatus]);
+    }, [pollStatus]);
 
     const reset = useCallback(() => {
         setStatus('idle');
