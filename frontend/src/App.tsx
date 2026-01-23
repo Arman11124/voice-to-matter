@@ -30,22 +30,35 @@ function App() {
   const [gcode, setGcode] = useState<string | null>(null);
   const [printEstimate, setPrintEstimate] = useState<{ minutes: number; layers: number } | null>(null);
 
+  // AI Provider selection (saved to localStorage)
+  const [aiProvider, setAiProvider] = useState<'tripo' | 'meshy'>(() => {
+    const saved = localStorage.getItem('voice-to-matter-ai-provider');
+    return (saved === 'meshy' ? 'meshy' : 'tripo');
+  });
+
   // Hooks
   const speech = useSpeechRecognition();
-  const tripo = useTripoAI();
-  const [isSaving, setIsSaving] = useState(false); // NEW: Saving state
+  const tripo = useTripoAI(aiProvider);  // Pass provider to hook
+  const [isSaving, setIsSaving] = useState(false);
 
   const serial = useWebSerial();
   const savedModels = useSavedModels();
   const [currentPrompt, setCurrentPrompt] = useState('');
-  const [, setIsRefineMode] = useState(false); // Setter used in handleVoicePress
-  const [pendingText, setPendingText] = useState<string | null>(null); // Text to confirm/edit before sending
+  const [, setIsRefineMode] = useState(false);
+  const [pendingText, setPendingText] = useState<string | null>(null);
   const modelViewerRef = useRef<HTMLElement | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);
   const cloudSync = useCloudSync();
 
   // State for STL export
   const [isExporting, setIsExporting] = useState(false);
+
+  // Toggle AI provider
+  const toggleAiProvider = () => {
+    const newProvider = aiProvider === 'tripo' ? 'meshy' : 'tripo';
+    setAiProvider(newProvider);
+    localStorage.setItem('voice-to-matter-ai-provider', newProvider);
+  };
 
   // Share STL to Anycubic Slicer Next via Share API
   const handleShareToSlicer = async () => {
@@ -260,6 +273,24 @@ function App() {
         <h1>{t('app.title')}</h1>
         <p>{t('app.subtitle')}</p>
         <div className="header-buttons">
+          {/* AI Provider Toggle */}
+          <button
+            className="ai-toggle"
+            onClick={toggleAiProvider}
+            title={`Сейчас: ${aiProvider === 'tripo' ? 'Tripo AI (платный)' : 'Meshy AI (бесплатный)'}`}
+            style={{
+              background: aiProvider === 'tripo' ? '#6c5ce7' : '#00b894',
+              color: 'white',
+              border: 'none',
+              padding: '0.4rem 0.8rem',
+              borderRadius: '8px',
+              fontSize: '0.85rem',
+              cursor: 'pointer',
+              marginRight: '0.5rem'
+            }}
+          >
+            {aiProvider === 'tripo' ? '🚀 Tripo' : '🆓 Meshy'}
+          </button>
           <button className="lang-toggle" onClick={toggleLanguage}>
             {i18n.language === 'ru' ? '🇬🇧 EN' : '🇷🇺 RU'}
           </button>

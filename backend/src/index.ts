@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import tripoRoutes from './routes/tripo';
+import meshyRoutes from './routes/meshy';
 import syncRoutes from './routes/sync';
 import sliceRoutes from './routes/slice';
 import { storageRoutes } from './routes/storage';
@@ -10,7 +11,8 @@ import { storageRoutes } from './routes/storage';
 // Load .env from backend directory
 dotenv.config({ path: path.join(process.cwd(), '.env') });
 
-console.log('🔑 API Key loaded:', process.env.TRIPO_API_KEY ? 'Yes' : 'No');
+console.log('🔑 Tripo API Key loaded:', process.env.TRIPO_API_KEY ? 'Yes' : 'No');
+console.log('🔑 Meshy API Key loaded:', process.env.MESHY_API_KEY ? 'Yes' : 'No');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -28,7 +30,8 @@ app.use(express.static(path.join(process.cwd(), 'public')));
 
 // Routes
 app.use('/api', tripoRoutes);
-app.use('/api', storageRoutes); // Mount at root /api to match post endpoint
+app.use('/api/meshy', meshyRoutes);  // Meshy AI routes
+app.use('/api', storageRoutes);
 app.use('/api/sync', syncRoutes);
 app.use('/api/slice', sliceRoutes);
 

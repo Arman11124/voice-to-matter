@@ -4,6 +4,7 @@ import { useState, useCallback } from 'react';
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
+export type AIProvider = 'tripo' | 'meshy';
 
 interface UseTripoAIReturn {
     status: GenerationStatus;
@@ -16,18 +17,22 @@ interface UseTripoAIReturn {
     reset: () => void;
 }
 
-export function useTripoAI(): UseTripoAIReturn {
+export function useTripoAI(provider: AIProvider = 'tripo'): UseTripoAIReturn {
     const [status, setStatus] = useState<GenerationStatus>('idle');
     const [progress, setProgress] = useState(0);
     const [modelUrl, setModelUrl] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
 
     const pollStatus = useCallback(async (taskId: string): Promise<string> => {
-        const maxAttempts = 60; // 2 minutes max (2s interval)
+        const maxAttempts = 90; // 3 minutes max for Meshy (can be slower)
         let attempts = 0;
 
         while (attempts < maxAttempts) {
-            const response = await fetch(`${API_BASE}/api/status/${taskId}`);
+            const statusPath = provider === 'meshy'
+                ? `${API_BASE}/api/meshy/status/${taskId}`
+                : `${API_BASE}/api/status/${taskId}`;
+
+            const response = await fetch(statusPath);
             const data = await response.json();
 
             if (!response.ok) {
@@ -50,7 +55,7 @@ export function useTripoAI(): UseTripoAIReturn {
         }
 
         throw new Error('Generation timed out');
-    }, []);
+    }, [provider]);
 
     const generate = useCallback(async (prompt: string): Promise<string | null> => {
         setStatus('generating');
@@ -59,10 +64,14 @@ export function useTripoAI(): UseTripoAIReturn {
         setError(null);
 
         try {
-            console.log('🚀 Starting generation with prompt:', prompt);
+            console.log(`🚀 [${provider.toUpperCase()}] Starting generation with prompt:`, prompt);
 
             // Step 1: Create task
-            const createResponse = await fetch(`${API_BASE}/api/generate`, {
+            const generatePath = provider === 'meshy'
+                ? `${API_BASE}/api/meshy/generate`
+                : `${API_BASE}/api/generate`;
+
+            const createResponse = await fetch(generatePath, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ prompt })
@@ -75,7 +84,7 @@ export function useTripoAI(): UseTripoAIReturn {
             }
 
             const { taskId } = createData;
-            console.log('📋 Task created:', taskId);
+            console.log(`📋 [${provider.toUpperCase()}] Task created:`, taskId);
 
             // Step 2: Poll for completion
             const originalUrl = await pollStatus(taskId);
@@ -83,8 +92,7 @@ export function useTripoAI(): UseTripoAIReturn {
             // Use proxy to avoid CORS issues with model-viewer
             const proxiedUrl = `${API_BASE}/api/model-proxy?url=${encodeURIComponent(originalUrl)}`;
 
-            console.log('✅ Model ready:', originalUrl);
-            console.log('🔄 Using proxied URL:', proxiedUrl);
+            console.log(`✅ [${provider.toUpperCase()}] Model ready:`, originalUrl);
             setModelUrl(proxiedUrl);
             setStatus('success');
             setProgress(100);
@@ -92,15 +100,20 @@ export function useTripoAI(): UseTripoAIReturn {
             return proxiedUrl;
 
         } catch (e) {
-            console.error('Generation error:', e);
+            console.error(`[${provider.toUpperCase()}] Generation error:`, e);
             setError(e instanceof Error ? e.message : 'Unknown error');
             setStatus('error');
             return null;
         }
-    }, [pollStatus]);
+    }, [provider, pollStatus]);
 
-    // Refine existing model using screenshot + new prompt
+    // Refine existing model using screenshot + new prompt (Tripo only for now)
     const refine = useCallback(async (imageBase64: string, prompt: string): Promise<string | null> => {
+        if (provider === 'meshy') {
+            setError('Refinement not supported with Meshy AI');
+            return null;
+        }
+
         setStatus('generating');
         setProgress(0);
         setError(null);
@@ -159,7 +172,7 @@ export function useTripoAI(): UseTripoAIReturn {
             setStatus('error');
             return null;
         }
-    }, [pollStatus]);
+    }, [provider, pollStatus]);
 
     const reset = useCallback(() => {
         setStatus('idle');
