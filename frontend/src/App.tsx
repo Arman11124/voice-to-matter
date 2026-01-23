@@ -272,8 +272,11 @@ function App() {
         </button>
         <h1>{t('app.title')}</h1>
         <p>{t('app.subtitle')}</p>
-        <div className="header-buttons">
-          {/* AI Provider Toggle */}
+        <div className="header-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-end' }}>
+          <button className="lang-toggle" onClick={toggleLanguage}>
+            {i18n.language === 'ru' ? '🇬🇧 EN' : '🇷🇺 RU'}
+          </button>
+          {/* AI Provider Toggle - below language */}
           <button
             className="ai-toggle"
             onClick={toggleAiProvider}
@@ -282,17 +285,13 @@ function App() {
               background: aiProvider === 'tripo' ? '#6c5ce7' : '#00b894',
               color: 'white',
               border: 'none',
-              padding: '0.4rem 0.8rem',
+              padding: '0.35rem 0.6rem',
               borderRadius: '8px',
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              marginRight: '0.5rem'
+              fontSize: '0.75rem',
+              cursor: 'pointer'
             }}
           >
             {aiProvider === 'tripo' ? '🚀 Tripo' : '🆓 Meshy'}
-          </button>
-          <button className="lang-toggle" onClick={toggleLanguage}>
-            {i18n.language === 'ru' ? '🇬🇧 EN' : '🇷🇺 RU'}
           </button>
         </div>
       </header>
