@@ -51,8 +51,8 @@ export function useSavedModels(): UseSavedModelsReturn {
             console.log('💾 Saving persistent model...', prompt);
 
             // 1. Call backend to download and store files
-            // Use hardcoded localhost for dev, but in prod this should be relative or env based
-            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+            // Use relative path for Vercel, or env var for dev
+            const API_BASE = import.meta.env.VITE_API_URL || '';
 
             const response = await fetch(`${API_BASE}/api/save-model`, {
                 method: 'POST',

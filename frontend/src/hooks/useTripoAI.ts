@@ -1,7 +1,8 @@
 import { useState, useCallback } from 'react';
 
 // Cloudflare Tunnel HTTPS proxy to VPS backend (PM2 managed)
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Default to empty string (relative path) for Vercel proxy compatibility
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
 
