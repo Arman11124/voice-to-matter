@@ -15,7 +15,6 @@ import { useWebSerial } from './hooks/useWebSerial';
 import { useSavedModels } from './hooks/useSavedModels';
 import { useCloudSync } from './hooks/useCloudSync';
 import type { SavedModel } from './hooks/useSavedModels';
-import { useSlicer } from './hooks/useSlicer'; // NEW: Slicer hook
 
 import { enrichPrompt } from './services/promptEnricher';
 import { estimatePrint } from './services/gcodeGenerator';
@@ -44,16 +43,76 @@ function App() {
   const modelViewerRef = useRef<HTMLElement | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);
   const cloudSync = useCloudSync();
-  const slicer = useSlicer(); // NEW: Slicer hook
 
-  // Handle "Print via App" (Download STL for Slicer)
-  const handleAppPrint = async () => {
+  // State for STL export
+  const [isExporting, setIsExporting] = useState(false);
+
+  // Share STL to Anycubic Slicer Next via Share API
+  const handleShareToSlicer = async () => {
+    if (!tripo.modelUrl) return;
+    setIsExporting(true);
+
+    try {
+      console.log('📤 Converting for Share...');
+      const { GLTFLoader } = await import('three/examples/jsm/loaders/GLTFLoader.js');
+      const { STLExporter } = await import('three/examples/jsm/exporters/STLExporter.js');
+
+      const loader = new GLTFLoader();
+      const gltf = await new Promise<any>((resolve, reject) => {
+        loader.load(tripo.modelUrl!, resolve, undefined, reject);
+      });
+
+      gltf.scene.updateMatrixWorld(true);
+      const exporter = new STLExporter();
+      const stlBuffer = exporter.parse(gltf.scene, { binary: true });
+
+      const filename = (currentPrompt || 'model').slice(0, 20).replace(/\s+/g, '_') + '.stl';
+
+      // Try different MIME types for maximum compatibility
+      const mimeTypes = ['application/sla', 'application/octet-stream', 'model/stl'];
+
+      for (const mimeType of mimeTypes) {
+        const blob = new Blob([stlBuffer as any], { type: mimeType });
+        const file = new File([blob], filename, { type: mimeType });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+          try {
+            console.log(`📤 Sharing with MIME: ${mimeType}`);
+            await navigator.share({
+              files: [file],
+              title: '3D Model',
+              text: 'Open in Anycubic Slicer Next'
+            });
+            console.log('✅ Shared successfully!');
+            setIsExporting(false);
+            return;
+          } catch (e: any) {
+            if (e.name === 'AbortError') {
+              console.log('❌ User cancelled share');
+              setIsExporting(false);
+              return;
+            }
+            console.log(`⚠️ Share failed with ${mimeType}:`, e.message);
+          }
+        }
+      }
+
+      // Fallback: alert user that Share is not supported
+      alert('Share не поддерживается на этом устройстве. Используйте кнопку "Скачать STL".');
+    } catch (e) {
+      console.error('Share error:', e);
+      alert('Ошибка при подготовке файла');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // Download STL file
+  const handleDownloadStl = async () => {
     if (!tripo.modelUrl) return;
 
-    console.log('🔪 Exporting STL for Slicer:', tripo.modelUrl);
+    console.log('📥 Downloading STL...');
     const filename = (currentPrompt || 'model').slice(0, 20).replace(/\s+/g, '_');
-
-    // Convert GLB to STL and download
     await downloadAsStl(tripo.modelUrl, filename);
   };
 
@@ -332,102 +391,68 @@ function App() {
             <span>📐 {printEstimate.layers} слоёв</span>
           </div>
         )}
-
-        {/* Send to Anycubic App Button (Mobile Friendly) */}
+        {/* Export STL Buttons */}
         {appState === 'ready' && (
           <div className="app-print-section" style={{ marginBottom: '1rem' }}>
-            <button
-              className="action-button primary-button"
-              onClick={handleAppPrint}
-              disabled={slicer.isSlicing}
-              style={{ width: '100%', background: '#6c5ce7' }} // Purple for "Brain" action
-            >
-              {slicer.isSlicing ? `⚙️ Подготовка...` : '📥 Скачать STL (в слайсер)'}
-            </button>
-            {slicer.error && <div className="error-message">{slicer.error}</div>}
+            {/* Two buttons: Share and Download */}
+            <div style={{ display: 'flex', gap: '0.75rem', flexDirection: 'column' }}>
+              {/* Share to Slicer App (Mobile) */}
+              <button
+                className="action-button primary-button"
+                onClick={handleShareToSlicer}
+                disabled={isExporting}
+                style={{
+                  width: '100%',
+                  background: '#00b894',
+                  padding: '1rem',
+                  fontSize: '1.1rem',
+                  fontWeight: 'bold',
+                  borderRadius: '12px',
+                  border: 'none',
+                  color: 'white',
+                  cursor: isExporting ? 'wait' : 'pointer',
+                  opacity: isExporting ? 0.7 : 1
+                }}
+              >
+                {isExporting ? '⏳ Подготовка...' : '📤 Открыть в Anycubic Slicer'}
+              </button>
 
-            {/* Instructions after export */}
-            {slicer.exportResult && (
-              <div style={{
-                background: 'rgba(108, 92, 231, 0.2)',
-                border: '1px solid rgba(108, 92, 231, 0.5)',
-                borderRadius: '12px',
-                padding: '1rem',
-                marginTop: '1rem',
-                textAlign: 'left'
-              }}>
-                {slicer.exportResult.instructions.map((line, i) => (
-                  <div key={i} style={{
-                    marginBottom: i < slicer.exportResult!.instructions.length - 1 ? '0.5rem' : 0,
-                    fontSize: '0.9rem',
-                    lineHeight: 1.4
-                  }}>
-                    {line}
-                  </div>
-                ))}
-                {slicer.exportResult.slicerUrl && (
-                  <button
-                    onClick={() => window.open(slicer.exportResult!.slicerUrl, '_blank')}
-                    style={{
-                      width: '100%',
-                      marginTop: '1rem',
-                      padding: '0.75rem',
-                      background: '#00b894',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      cursor: 'pointer',
-                      fontWeight: 'bold'
-                    }}
-                  >
-                    🌐 Открыть Kiri:Moto
-                  </button>
-                )}
-                <button
-                  onClick={() => slicer.clearResult()}
-                  style={{
-                    width: '100%',
-                    marginTop: '0.5rem',
-                    padding: '0.5rem',
-                    background: 'rgba(255,255,255,0.1)',
-                    color: 'rgba(255,255,255,0.7)',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  ✓ Понятно
-                </button>
-              </div>
-            )}
+              {/* Download STL */}
+              <button
+                className="action-button"
+                onClick={handleDownloadStl}
+                disabled={isExporting}
+                style={{
+                  width: '100%',
+                  background: '#6c5ce7',
+                  padding: '0.85rem',
+                  fontSize: '1rem',
+                  borderRadius: '12px',
+                  border: 'none',
+                  color: 'white',
+                  cursor: isExporting ? 'wait' : 'pointer',
+                  opacity: isExporting ? 0.7 : 1
+                }}
+              >
+                📥 Скачать STL
+              </button>
+            </div>
 
-            {/* Debug: Download GLB for manual verification */}
+            {/* Also show GLB download for debugging */}
             {tripo.modelUrl && (
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '0.5rem' }}>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', marginTop: '0.75rem' }}>
                 <a
                   href={tripo.modelUrl}
                   download={`${currentPrompt || 'model'}.glb`}
                   style={{
                     padding: '0.5rem',
-                    color: 'rgba(255,255,255,0.6)',
-                    fontSize: '0.8rem'
+                    color: 'rgba(255,255,255,0.5)',
+                    fontSize: '0.75rem',
+                    textDecoration: 'none'
                   }}
                 >
-                  📥 GLB
+                  📥 GLB (оригинал)
                 </a>
-                <button
-                  onClick={() => downloadAsStl(tripo.modelUrl!, currentPrompt || 'model')}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    padding: '0.5rem',
-                    color: 'rgba(255,255,255,0.6)',
-                    fontSize: '0.8rem',
-                    cursor: 'pointer'
-                  }}
-                >
-                  📥 STL (для Kiri)
-                </button>
               </div>
             )}
           </div>
