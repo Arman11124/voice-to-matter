@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 
-// Production: Direct tunnel URL. Dev: empty for local proxy
-const API_BASE = import.meta.env.DEV ? '' : 'https://voice.xn--b1a5a.fun';
+// API base URL from environment variable
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
 

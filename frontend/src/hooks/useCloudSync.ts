@@ -1,8 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { SavedModel } from './useSavedModels';
 
-// Production: Direct tunnel URL. Dev: empty for local proxy
-const API_BASE = import.meta.env.DEV ? '' : 'https://voice.xn--b1a5a.fun';
+// API base URL from environment variable
+const API_BASE = import.meta.env.VITE_API_URL || '';
 const PIN_STORAGE_KEY = 'voice-to-matter-pin';
 
 interface UseCloudSyncReturn {

@@ -1,18 +1,6 @@
 {
     "rewrites": [
         {
-            "source": "/api/:path*",
-            "destination": "http://157.245.32.26:3001/api/:path*"
-        },
-        {
-            "source": "/models/:path*",
-            "destination": "http://157.245.32.26:3001/models/:path*"
-        },
-        {
-            "source": "/images/:path*",
-            "destination": "http://157.245.32.26:3001/images/:path*"
-        },
-        {
             "source": "/(.*)",
             "destination": "/"
         }

@@ -44,8 +44,8 @@ export function useSavedModels(): UseSavedModelsReturn {
         try {
             console.log('💾 Saving persistent model...', prompt);
 
-            // Production: Direct tunnel URL. Dev: empty for local proxy
-            const API_BASE = import.meta.env.DEV ? '' : 'https://voice.xn--b1a5a.fun';
+            // API base URL from environment variable
+            const API_BASE = import.meta.env.VITE_API_URL || '';
 
             const response = await fetch(`${API_BASE}/api/save-model`, {
                 method: 'POST',
