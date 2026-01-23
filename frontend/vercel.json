@@ -2,15 +2,15 @@
     "rewrites": [
         {
             "source": "/api/:path*",
-            "destination": "http://167.99.201.47:3001/api/:path*"
+            "destination": "https://surrounded-item-las-icons.trycloudflare.com/api/:path*"
         },
         {
             "source": "/models/:path*",
-            "destination": "http://167.99.201.47:3001/models/:path*"
+            "destination": "https://surrounded-item-las-icons.trycloudflare.com/models/:path*"
         },
         {
             "source": "/images/:path*",
-            "destination": "http://167.99.201.47:3001/images/:path*"
+            "destination": "https://surrounded-item-las-icons.trycloudflare.com/images/:path*"
         },
         {
             "source": "/(.*)",
