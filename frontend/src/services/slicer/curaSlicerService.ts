@@ -25,7 +25,7 @@ async function glbToStl(glbUrl: string): Promise<ArrayBuffer> {
 
     // STLExporter with binary:true returns DataView, extract the ArrayBuffer
     if (stlResult instanceof DataView) {
-        return stlResult.buffer;
+        return stlResult.buffer as ArrayBuffer;
     }
     // Fallback for non-binary (string)
     const encoder = new TextEncoder();

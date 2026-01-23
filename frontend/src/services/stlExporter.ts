@@ -42,7 +42,8 @@ export async function convertGlbToStl(glbUrl: string): Promise<Blob> {
     const stlBuffer = exporter.parse(gltf.scene, { binary: true });
 
     // 4. Return as Blob (binary STL)
-    return new Blob([stlBuffer], { type: 'model/stl' });
+    // Cast to any to avoid "ArrayBufferLike vs ArrayBuffer" strict type error from three.js downgrade
+    return new Blob([stlBuffer as any], { type: 'model/stl' });
 }
 
 export async function downloadAsStl(glbUrl: string, filename: string) {
