@@ -105,7 +105,7 @@ router.get('/status/:taskId', async (req: Request, res: Response) => {
         if (data.status === 'SUCCEEDED' && data.model_urls?.glb) {
             result.modelUrl = data.model_urls.glb;
             result.progress = 100;
-            console.log(`✅ [Meshy] Model ready: ${result.modelUrl.substring(0, 50)}...`);
+            console.log(`✅ [Meshy] Model ready: ${data.model_urls.glb.substring(0, 50)}...`);
         }
 
         // If failed
