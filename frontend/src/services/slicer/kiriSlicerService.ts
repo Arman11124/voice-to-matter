@@ -142,23 +142,44 @@ function downloadFile(blob: Blob, filename: string): void {
 
 /**
  * Share STL file on mobile via Web Share API
+ * Tries multiple MIME types for maximum compatibility
  */
 async function shareStlFile(blob: Blob, filename: string): Promise<boolean> {
-    const file = new File([blob], filename, { type: 'model/stl' });
+    // Try different MIME types - some browsers/apps prefer different ones
+    const mimeTypes = [
+        'application/sla',           // Standard STL MIME
+        'application/octet-stream',  // Generic binary (fallback)
+        'model/stl',                 // Official IANA type
+    ];
 
-    if (navigator.canShare && navigator.canShare({ files: [file] })) {
-        try {
-            await navigator.share({
-                files: [file],
-                title: '3D Model for Printing',
-                text: 'Open in Anycubic Slicer or Cura'
-            });
-            return true;
-        } catch (e) {
-            console.log('Share cancelled or failed:', e);
-            return false;
+    for (const mimeType of mimeTypes) {
+        const file = new File([blob], filename, { type: mimeType });
+
+        if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            try {
+                console.log(`📤 Trying to share with MIME: ${mimeType}`);
+                await navigator.share({
+                    files: [file],
+                    title: '3D Model for Printing',
+                    text: 'Open in Anycubic Slicer Next'
+                });
+                console.log(`✅ Share succeeded with MIME: ${mimeType}`);
+                return true;
+            } catch (e: any) {
+                // User cancelled or share failed
+                if (e.name === 'AbortError') {
+                    console.log('❌ User cancelled share dialog');
+                    return false; // User explicitly cancelled, don't try other types
+                }
+                console.log(`⚠️ Share failed with ${mimeType}:`, e.message);
+                // Continue to try next MIME type
+            }
+        } else {
+            console.log(`⚠️ canShare returned false for MIME: ${mimeType}`);
         }
     }
+
+    console.log('❌ No MIME type worked for sharing');
     return false;
 }
 
