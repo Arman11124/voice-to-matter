@@ -259,11 +259,15 @@ function App() {
         <button className="cloud-btn header-left" onClick={() => setShowPinModal(true)} title="Облачная синхронизация">
           ☁️ {cloudSync.pin ? `PIN: ${cloudSync.pin}` : 'Синхро'}
         </button>
-        <h1>{t('app.title')}</h1>
-        <p>{t('app.subtitle')}</p>
-        <button className="lang-toggle" onClick={toggleLanguage}>
+        <button
+          className="lang-toggle"
+          onClick={toggleLanguage}
+          style={{ position: 'absolute', top: '1rem', right: '1rem' }}
+        >
           {i18n.language === 'ru' ? '🇬🇧 EN' : '🇷🇺 RU'}
         </button>
+        <h1>{t('app.title')}</h1>
+        <p>{t('app.subtitle')}</p>
       </header>
 
       {/* Main content */}
