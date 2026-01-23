@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 
 // Cloudflare Tunnel HTTPS proxy to VPS backend (PM2 managed)
-const API_BASE = import.meta.env.VITE_API_URL || 'https://spotlight-interior-medical-carey.trycloudflare.com';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 export type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
 

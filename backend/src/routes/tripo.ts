@@ -120,10 +120,18 @@ router.get('/model-proxy', async (req: Request, res: Response) => {
 
         console.log('📦 Proxying model from:', url.substring(0, 80) + '...');
 
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': '*/*',
+                'Referer': 'https://tripo3d.ai/'
+            }
+        });
 
         if (!response.ok) {
-            res.status(response.status).json({ error: 'Failed to fetch model' });
+            const errorText = await response.text();
+            console.error(`❌ Upstream error ${response.status} for ${url}:`, errorText);
+            res.status(response.status).send(errorText);
             return;
         }
 

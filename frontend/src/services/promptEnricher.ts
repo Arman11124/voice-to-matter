@@ -8,22 +8,22 @@
 const SAFETY_MODIFIERS = [
     'solid thick walls',
     'minimal overhangs',
-    'organic sculpted forms',
-    'no thin fragile parts'
+    'no thin fragile parts',
+    'flat bottom', // Ensure model sits flat
+    'thick grounded legs', // Better contact with base
+    'sturdy construction'
 ];
 
 // Style modifiers for better results
 const STYLE_MODIFIERS = [
     'figurine style',
-    'character design aesthetic',
+    'toy aesthetic',
     'colorful',
     'vibrant colors',
     'high quality texture',
     '3D printable model',
-    'single piece design',
     'smooth surfaces',
-    'high fidelity',
-    'detailed'
+    'high fidelity'
 ];
 
 /**
@@ -37,11 +37,21 @@ export function enrichPrompt(rawInput: string): string {
         return 'cute toy figurine';
     }
 
-    const safetyMods = SAFETY_MODIFIERS.join(', ');
-    const styleMods = STYLE_MODIFIERS.join(', ');
+    // Check if user specifically requested a shape that conflicts with realism
+    const isStylized = /shar|ball|sphere|cube|box|square|circle|round|stylized|cartoon|chibi/i.test(prompt) ||
+        /шар|куб|квадрат|круг|сфера|мульт|чиби/i.test(prompt);
 
-    // Pass user's prompt directly (Russian or English) + add modifiers
-    const enrichedPrompt = `${prompt}, ${safetyMods}, ${styleMods}`;
+    const safetyMods = [...SAFETY_MODIFIERS];
+
+    // If not explicitly stylized, we can add some balancing terms, 
+    // but we generally avoid "realistic proportions" to allow for "ball dogs"
+    if (!isStylized) {
+        safetyMods.push('balanced dimensions');
+    }
+
+    // Combine: User Prompt + Minimal Base + Safety + Style
+    // Changed "solid round pedestal base" to "small thin base" to avoid statue look
+    const enrichedPrompt = `${prompt}, standing on a small thin base, ${safetyMods.join(', ')}, ${STYLE_MODIFIERS.join(', ')}`;
 
     console.log('📝 Prompt enrichment:', {
         original: rawInput,

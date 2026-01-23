@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { SavedModel } from './useSavedModels';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'https://spotlight-interior-medical-carey.trycloudflare.com';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 const PIN_STORAGE_KEY = 'voice-to-matter-pin';
 
 interface UseCloudSyncReturn {
@@ -110,7 +110,12 @@ export function useCloudSync(): UseCloudSyncReturn {
             }
 
             console.log('☁️ Loaded from cloud:', data.models?.length || 0, 'models');
-            return data.models || [];
+
+            // Fix legacy URLs
+            return (data.models || []).map((m: SavedModel) => ({
+                ...m,
+                modelUrl: m.modelUrl.replace('https://spotlight-interior-medical-carey.trycloudflare.com', 'http://localhost:3001')
+            }));
 
         } catch (e) {
             const message = e instanceof Error ? e.message : 'Load failed';

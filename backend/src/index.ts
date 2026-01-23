@@ -5,6 +5,7 @@ import path from 'path';
 import tripoRoutes from './routes/tripo';
 import syncRoutes from './routes/sync';
 import sliceRoutes from './routes/slice';
+import { storageRoutes } from './routes/storage';
 
 // Load .env from backend directory
 dotenv.config({ path: path.join(process.cwd(), '.env') });
@@ -22,8 +23,12 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '50mb' })); // Increased limit for STL data
 
+// Serve static files (models/images)
+app.use(express.static(path.join(process.cwd(), 'public')));
+
 // Routes
 app.use('/api', tripoRoutes);
+app.use('/api', storageRoutes); // Mount at root /api to match post endpoint
 app.use('/api/sync', syncRoutes);
 app.use('/api/slice', sliceRoutes);
 

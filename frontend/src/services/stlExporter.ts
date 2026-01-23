@@ -4,6 +4,7 @@
  */
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { STLExporter } from 'three/examples/jsm/exporters/STLExporter.js';
+import { Box3, Vector3 } from 'three';
 
 export async function convertGlbToStl(glbUrl: string): Promise<Blob> {
     // 1. Load GLB
@@ -12,8 +13,29 @@ export async function convertGlbToStl(glbUrl: string): Promise<Blob> {
         loader.load(glbUrl, resolve, undefined, reject);
     });
 
-    // 2. Update world matrices
+    // 2. Auto-scale logic (Fix "Object too small")
+    // Tripo models are ~1 unit (meters). Slicers expect mm.
     gltf.scene.updateMatrixWorld(true);
+    const box = new Box3().setFromObject(gltf.scene);
+    const size = new Vector3();
+    box.getSize(size);
+    const maxDim = Math.max(size.x, size.y, size.z);
+
+    // If model is effectively < 5cm (50 units), scale it up to 15cm (150mm) - SAFER for 220x220 bed
+    if (maxDim < 50) {
+        const TARGET_SIZE_MM = 150; // 15cm (Safe buffer for Kobra 2 Pro)
+        const scaleFactor = TARGET_SIZE_MM / maxDim;
+
+        console.log(`📏 Auto-scaling model: ${maxDim.toFixed(2)} units -> 150mm (x${scaleFactor.toFixed(2)})`);
+        gltf.scene.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
+        // Center the model at 0,0,0 (helpful for slicers)
+        // Re-calculate box after scale implies simplified centering logic or just export as is (slicers usually center auto)
+        // But updating matrix world is CRITICAL
+        gltf.scene.updateMatrixWorld(true);
+    } else {
+        gltf.scene.updateMatrixWorld(true);
+    }
 
     // 3. Export the entire scene directly (STLExporter handles scene traversal)
     const exporter = new STLExporter();

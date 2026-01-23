@@ -34,21 +34,27 @@ function App() {
   // Hooks
   const speech = useSpeechRecognition();
   const tripo = useTripoAI();
+  const [isSaving, setIsSaving] = useState(false); // NEW: Saving state
+
   const serial = useWebSerial();
   const savedModels = useSavedModels();
   const [currentPrompt, setCurrentPrompt] = useState('');
-  const [isRefineMode, setIsRefineMode] = useState(false);
+  const [, setIsRefineMode] = useState(false); // Setter used in handleVoicePress
+  const [pendingText, setPendingText] = useState<string | null>(null); // Text to confirm/edit before sending
   const modelViewerRef = useRef<HTMLElement | null>(null);
   const [showPinModal, setShowPinModal] = useState(false);
   const cloudSync = useCloudSync();
   const slicer = useSlicer(); // NEW: Slicer hook
 
-  // Handle "Print via App" (Slicing + Share)
+  // Handle "Print via App" (Download STL for Slicer)
   const handleAppPrint = async () => {
     if (!tripo.modelUrl) return;
 
+    console.log('🔪 Exporting STL for Slicer:', tripo.modelUrl);
     const filename = (currentPrompt || 'model').slice(0, 20).replace(/\s+/g, '_');
-    await slicer.sliceAndShare(tripo.modelUrl, filename);
+
+    // Convert GLB to STL and download
+    await downloadAsStl(tripo.modelUrl, filename);
   };
 
 
@@ -117,24 +123,9 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [cloudSync.pin, cloudSync.loadFromCloud]);
 
-  // Capture screenshot from model-viewer
-  const captureScreenshot = useCallback(async (): Promise<string | null> => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const modelViewer = modelViewerRef.current as any;
-    if (!modelViewer) return null;
 
-    try {
-      // model-viewer has a toDataURL method
-      const dataUrl = await modelViewer.toDataURL('image/png');
-      console.log('📷 Screenshot captured');
-      return dataUrl;
-    } catch (e) {
-      console.error('Screenshot error:', e);
-      return null;
-    }
-  }, []);
 
-  // Handle voice button release
+  // Handle voice button release - now shows text for confirmation
   const handleVoiceRelease = useCallback(async () => {
     speech.stopListening();
 
@@ -142,59 +133,44 @@ function App() {
     await new Promise(resolve => setTimeout(resolve, 500));
 
     if (speech.transcript) {
-      setAppState('generating');
-
-      let modelUrl: string | null = null;
-
-      if (isRefineMode && tripo.modelUrl) {
-        // REFINE MODE: Use image-to-model with screenshot
-        console.log('🔄 Refine mode: capturing screenshot and refining');
-
-        const screenshot = await captureScreenshot();
-        if (screenshot) {
-          // Combine prompts and enrich
-          const newPrompt = `${currentPrompt}, ${speech.transcript}`;
-          setCurrentPrompt(newPrompt);
-          const enrichedPrompt = enrichPrompt(newPrompt);
-
-          modelUrl = await tripo.refine(screenshot, enrichedPrompt);
-        } else {
-          // Fallback to regular generation if screenshot fails
-          const newPrompt = `${currentPrompt}, ${speech.transcript}`;
-          setCurrentPrompt(newPrompt);
-          const enrichedPrompt = enrichPrompt(newPrompt);
-          modelUrl = await tripo.generate(enrichedPrompt);
-        }
-      } else {
-        // NEW GENERATION: Use text-to-model
-        setCurrentPrompt(speech.transcript);
-        const enrichedPrompt = enrichPrompt(speech.transcript);
-
-        // DEBUG: Show user what's being sent
-        console.log('🎤 SPEECH RECOGNIZED:', speech.transcript);
-        console.log('📤 ENRICHED PROMPT SENT TO API:', enrichedPrompt);
-
-        modelUrl = await tripo.generate(enrichedPrompt);
-      }
-
-      if (modelUrl) {
-        setAppState('ready');
-
-        // For MVP, we'll use a placeholder G-code
-        const placeholderGcode = generatePlaceholderGcode();
-        setGcode(placeholderGcode);
-
-        const estimate = estimatePrint(placeholderGcode);
-        setPrintEstimate({ minutes: estimate.estimatedMinutes, layers: estimate.layers });
-      } else {
-        setAppState('idle');
-      }
+      // Show text for confirmation/editing before sending
+      setPendingText(speech.transcript);
+      setAppState('idle'); // Go back to idle to show confirm UI
     } else {
       setAppState('idle');
     }
 
     setIsRefineMode(false);
-  }, [speech, tripo, currentPrompt, isRefineMode, captureScreenshot]);
+  }, [speech]);
+
+  // Confirm and generate model with the text (editable)
+  const handleConfirmGenerate = useCallback(async (text: string) => {
+    setPendingText(null);
+    setAppState('generating');
+
+    const enrichedPrompt = enrichPrompt(text);
+    console.log('🎤 CONFIRMED TEXT:', text);
+    console.log('📤 ENRICHED PROMPT SENT TO API:', enrichedPrompt);
+
+    setCurrentPrompt(text);
+    const modelUrl = await tripo.generate(enrichedPrompt);
+
+    if (modelUrl) {
+      setAppState('ready');
+      const placeholderGcode = generatePlaceholderGcode();
+      setGcode(placeholderGcode);
+      const estimate = estimatePrint(placeholderGcode);
+      setPrintEstimate({ minutes: estimate.estimatedMinutes, layers: estimate.layers });
+    } else {
+      setAppState('idle');
+    }
+  }, [tripo]);
+
+  // Cancel pending text
+  const handleCancelPending = useCallback(() => {
+    setPendingText(null);
+    setAppState('idle');
+  }, []);
 
 
 
@@ -242,6 +218,46 @@ function App() {
           disabled={appState === 'printing' || appState === 'slicing'}
         />
 
+        {/* Text Confirmation Modal */}
+        {pendingText && (
+          <div className="confirm-text-overlay">
+            <div className="confirm-text-modal">
+              <div className="confirm-text-label">✏️ Проверьте текст:</div>
+              <input
+                type="text"
+                className="confirm-text-input"
+                defaultValue={pendingText}
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    handleConfirmGenerate((e.target as HTMLInputElement).value);
+                  } else if (e.key === 'Escape') {
+                    handleCancelPending();
+                  }
+                }}
+                id="pending-text-input"
+              />
+              <div className="confirm-text-buttons">
+                <button
+                  className="confirm-btn cancel"
+                  onClick={handleCancelPending}
+                >
+                  ❌ Отмена
+                </button>
+                <button
+                  className="confirm-btn confirm"
+                  onClick={() => {
+                    const input = document.getElementById('pending-text-input') as HTMLInputElement;
+                    handleConfirmGenerate(input.value);
+                  }}
+                >
+                  ✅ Создать
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Error display */}
         {speech.error && (
           <div className="error-message">{speech.error}</div>
@@ -280,14 +296,17 @@ function App() {
           <div className="model-controls">
             <button
               className="control-btn save-btn"
-              onClick={() => {
+              onClick={async () => {
                 if (currentPrompt && tripo.modelUrl) {
-                  savedModels.saveModel(currentPrompt, tripo.modelUrl);
+                  setIsSaving(true);
+                  await savedModels.saveModel(currentPrompt, tripo.modelUrl);
+                  setIsSaving(false);
                 }
               }}
+              disabled={isSaving}
               title="Сохранить в галерею"
             >
-              💾 Сохранить
+              {isSaving ? '⏳ Сохр...' : '💾 Сохранить'}
             </button>
 
             <button
@@ -323,9 +342,64 @@ function App() {
               disabled={slicer.isSlicing}
               style={{ width: '100%', background: '#6c5ce7' }} // Purple for "Brain" action
             >
-              {slicer.isSlicing ? `⚙️ Подготовка ${Math.round(slicer.progress)}%...` : '📱 Отправить в приложение'}
+              {slicer.isSlicing ? `⚙️ Подготовка...` : '📥 Скачать STL (в слайсер)'}
             </button>
             {slicer.error && <div className="error-message">{slicer.error}</div>}
+
+            {/* Instructions after export */}
+            {slicer.exportResult && (
+              <div style={{
+                background: 'rgba(108, 92, 231, 0.2)',
+                border: '1px solid rgba(108, 92, 231, 0.5)',
+                borderRadius: '12px',
+                padding: '1rem',
+                marginTop: '1rem',
+                textAlign: 'left'
+              }}>
+                {slicer.exportResult.instructions.map((line, i) => (
+                  <div key={i} style={{
+                    marginBottom: i < slicer.exportResult!.instructions.length - 1 ? '0.5rem' : 0,
+                    fontSize: '0.9rem',
+                    lineHeight: 1.4
+                  }}>
+                    {line}
+                  </div>
+                ))}
+                {slicer.exportResult.slicerUrl && (
+                  <button
+                    onClick={() => window.open(slicer.exportResult!.slicerUrl, '_blank')}
+                    style={{
+                      width: '100%',
+                      marginTop: '1rem',
+                      padding: '0.75rem',
+                      background: '#00b894',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    🌐 Открыть Kiri:Moto
+                  </button>
+                )}
+                <button
+                  onClick={() => slicer.clearResult()}
+                  style={{
+                    width: '100%',
+                    marginTop: '0.5rem',
+                    padding: '0.5rem',
+                    background: 'rgba(255,255,255,0.1)',
+                    color: 'rgba(255,255,255,0.7)',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  ✓ Понятно
+                </button>
+              </div>
+            )}
 
             {/* Debug: Download GLB for manual verification */}
             {tripo.modelUrl && (

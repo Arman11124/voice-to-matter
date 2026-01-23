@@ -23,7 +23,14 @@ export function useSavedModels(): UseSavedModelsReturn {
     const [models, setModels] = useState<SavedModel[]>(() => {
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
-            return saved ? JSON.parse(saved) : [];
+            if (!saved) return [];
+
+            // Fix legacy Cloudflare URLs on load
+            const parsed = JSON.parse(saved);
+            return parsed.map((m: any) => ({
+                ...m,
+                modelUrl: m.modelUrl.replace('https://spotlight-interior-medical-carey.trycloudflare.com', 'http://localhost:3001')
+            }));
         } catch (e) {
             console.error('Failed to load saved models:', e);
             return [];
@@ -39,23 +46,55 @@ export function useSavedModels(): UseSavedModelsReturn {
         }
     }, [models]);
 
-    const saveModel = useCallback((prompt: string, modelUrl: string, thumbnail?: string, id?: string, createdAt?: number) => {
-        const newModel: SavedModel = {
-            id: id || Date.now().toString(),
-            prompt,
-            modelUrl,
-            thumbnail,
-            createdAt: createdAt || Date.now()
-        };
+    const saveModel = useCallback(async (prompt: string, modelUrl: string, thumbnailUrl?: string, id?: string, createdAt?: number) => {
+        try {
+            console.log('💾 Saving persistent model...', prompt);
 
-        setModels(prev => {
-            // Check for duplicates if ID is provided
-            if (id && prev.some(m => m.id === id)) {
-                return prev;
-            }
-            return [newModel, ...prev].slice(0, 20); // Keep max 20 models
-        });
-        console.log('💾 Model saved:', prompt);
+            // 1. Call backend to download and store files
+            // Use hardcoded localhost for dev, but in prod this should be relative or env based
+            const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+
+            const response = await fetch(`${API_BASE}/api/save-model`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ modelUrl, thumbnailUrl, prompt })
+            });
+
+            if (!response.ok) throw new Error('Failed to persist model on server');
+
+            const data = await response.json();
+            const permanentModelUrl = `${API_BASE}${data.modelUrl}`;
+            const permanentThumbnailUrl = data.thumbnail ? `${API_BASE}${data.thumbnail}` : thumbnailUrl;
+
+            // 2. Save metadata to localStorage with PERMANENT URLs
+            const newModel: SavedModel = {
+                id: data.id, // Use server-generated ID
+                prompt,
+                modelUrl: permanentModelUrl,
+                thumbnail: permanentThumbnailUrl,
+                createdAt: createdAt || Date.now()
+            };
+
+            setModels(prev => {
+                // Check for duplicates
+                if (prev.some(m => m.id === newModel.id)) return prev;
+                return [newModel, ...prev].slice(0, 20);
+            });
+            console.log('✅ Model saved permanently:', newModel);
+
+        } catch (e) {
+            console.error('Save error:', e);
+            // Fallback (unsafe): Save original URL if server fails
+            alert('Ошибка сохранения на сервере. Сохранено локально (ненадолго).');
+            const newModel: SavedModel = {
+                id: id || Date.now().toString(),
+                prompt,
+                modelUrl,
+                thumbnail: thumbnailUrl,
+                createdAt: createdAt || Date.now()
+            };
+            setModels(prev => [newModel, ...prev].slice(0, 20));
+        }
     }, []);
 
     const deleteModel = useCallback((id: string) => {

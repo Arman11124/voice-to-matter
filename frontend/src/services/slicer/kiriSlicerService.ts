@@ -44,11 +44,29 @@ async function glbToStlBlob(glbUrl: string): Promise<Blob> {
 
     console.log(`📐 Found ${geometries.length} meshes, merging...`);
 
-    const mergedGeometry = mergeGeometries(geometries, false);
+    // Import mergeVertices for mesh cleanup
+    const { mergeVertices } = await import('three/examples/jsm/utils/BufferGeometryUtils.js');
+
+    let mergedGeometry = mergeGeometries(geometries, false);
 
     if (!mergedGeometry) {
         throw new Error('Failed to merge geometries');
     }
+
+    // Mesh cleanup for better slicing compatibility
+    console.log('🔧 Cleaning up mesh...');
+
+    // 1. Merge duplicate vertices (fixes gaps in mesh)
+    mergedGeometry = mergeVertices(mergedGeometry);
+
+    // 2. Recompute normals (fixes inverted faces)
+    mergedGeometry.computeVertexNormals();
+
+    // 3. Remove skinning attributes that can cause issues
+    mergedGeometry.deleteAttribute('skinIndex');
+    mergedGeometry.deleteAttribute('skinWeight');
+
+    console.log('✅ Mesh cleanup complete');
 
     // Center and place on Z=0
     mergedGeometry.computeBoundingBox();
@@ -57,14 +75,41 @@ async function glbToStlBlob(glbUrl: string): Promise<Blob> {
     bbox.getCenter(center);
     mergedGeometry.translate(-center.x, -center.y, -bbox.min.z);
 
-    // Scale if too big
+    // Kobra 2 Pro bed: 220 x 220 x 250 mm (20mm safety margin)
+    const BED_X = 200; // mm
+    const BED_Y = 200; // mm
+    const BED_Z = 200; // mm
+
+    // Scale if model exceeds bed limits
+    mergedGeometry.computeBoundingBox();
+    const newBbox = mergedGeometry.boundingBox!;
     const size = new THREE.Vector3();
-    bbox.getSize(size);
-    const maxDim = Math.max(size.x, size.y, size.z);
-    if (maxDim > 200) {
-        const scale = 200 / maxDim;
+    newBbox.getSize(size);
+
+    const scaleX = size.x > BED_X ? BED_X / size.x : 1;
+    const scaleY = size.y > BED_Y ? BED_Y / size.y : 1;
+    const scaleZ = size.z > BED_Z ? BED_Z / size.z : 1;
+    const scale = Math.min(scaleX, scaleY, scaleZ);
+
+    if (scale < 1) {
         mergedGeometry.scale(scale, scale, scale);
-        console.log(`📏 Scaled to ${(scale * 100).toFixed(0)}%`);
+        console.log(`📏 Scaled to ${(scale * 100).toFixed(0)}% to fit Kobra 2 Pro bed (${BED_X}x${BED_Y}x${BED_Z}mm)`);
+
+        // Re-center on Z=0 after scaling (critical fix!)
+        mergedGeometry.computeBoundingBox();
+        const scaledBbox = mergedGeometry.boundingBox!;
+        mergedGeometry.translate(0, 0, -scaledBbox.min.z);
+        console.log(`📍 Re-centered on Z=0 after scaling`);
+    } else {
+        console.log(`✅ Model fits bed: ${size.x.toFixed(1)}x${size.y.toFixed(1)}x${size.z.toFixed(1)}mm`);
+    }
+
+    // Final verification - ensure nothing below Z=0
+    mergedGeometry.computeBoundingBox();
+    const finalBbox = mergedGeometry.boundingBox!;
+    if (finalBbox.min.z < 0) {
+        mergedGeometry.translate(0, 0, -finalBbox.min.z);
+        console.log(`⚠️ Fixed negative Z: lifted by ${(-finalBbox.min.z).toFixed(2)}mm`);
     }
 
     const tempMesh = new THREE.Mesh(mergedGeometry);
@@ -119,11 +164,18 @@ async function shareStlFile(blob: Blob, filename: string): Promise<boolean> {
 /**
  * Smart export - detects platform and uses best method
  */
+export interface ExportResult {
+    method: 'share' | 'download' | 'kiri';
+    filename: string;
+    instructions: string[];
+    slicerUrl?: string;
+}
+
 export async function exportForSlicing(
     modelUrl: string,
     filename: string,
     onProgress?: (percent: number) => void
-): Promise<{ method: 'share' | 'download' | 'kiri' }> {
+): Promise<ExportResult> {
     onProgress?.(10);
 
     console.log('🔄 Converting GLB to STL...');
@@ -131,6 +183,8 @@ export async function exportForSlicing(
     const stlFilename = filename.replace(/\.[^/.]+$/, '') + '.stl';
     console.log(`📦 STL: ${(stlBlob.size / 1024).toFixed(1)} KB`);
     onProgress?.(60);
+
+    const KIRI_URL = 'https://grid.space/kiri/#mode=FDM';
 
     if (isMobile()) {
         // Mobile: Try to share, fallback to download
@@ -140,13 +194,33 @@ export async function exportForSlicing(
         if (shared) {
             console.log('✅ Shared to app!');
             onProgress?.(100);
-            return { method: 'share' };
+            return {
+                method: 'share',
+                filename: stlFilename,
+                instructions: [
+                    '✅ Файл отправлен!',
+                    '1️⃣ Выбери слайсер (Cura, PrusaSlicer)',
+                    '2️⃣ Нарежь модель',
+                    '3️⃣ Сохрани G-code на USB → Печатай!'
+                ]
+            };
         } else {
             // Fallback: download
             downloadFile(stlBlob, stlFilename);
             console.log('📥 Downloaded (share cancelled)');
             onProgress?.(100);
-            return { method: 'download' };
+            return {
+                method: 'download',
+                filename: stlFilename,
+                instructions: [
+                    `📥 Скачан: ${stlFilename}`,
+                    '1️⃣ Открой grid.space/kiri в браузере',
+                    '2️⃣ Перетащи STL файл в слайсер',
+                    '3️⃣ Нажми Slice → Export G-code',
+                    '4️⃣ Сохрани на USB → Печатай!'
+                ],
+                slicerUrl: KIRI_URL
+            };
         }
     } else {
         // Desktop: Download + open Kiri:Moto
@@ -155,10 +229,20 @@ export async function exportForSlicing(
         onProgress?.(80);
 
         // Open Kiri:Moto in new tab
-        window.open('https://grid.space/kiri/#mode=FDM', '_blank');
+        window.open(KIRI_URL, '_blank');
         console.log('🌐 Opened Kiri:Moto - drag your STL file to slice!');
         onProgress?.(100);
 
-        return { method: 'kiri' };
+        return {
+            method: 'kiri',
+            filename: stlFilename,
+            instructions: [
+                `📥 Скачан: ${stlFilename}`,
+                '1️⃣ Перетащи файл в Kiri:Moto (открылся в новой вкладке)',
+                '2️⃣ Нажми Slice → Export',
+                '3️⃣ Сохрани G-code на USB → Печатай!'
+            ],
+            slicerUrl: KIRI_URL
+        };
     }
 }

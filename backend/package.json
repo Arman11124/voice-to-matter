@@ -9,11 +9,15 @@
         "start": "node dist/index.js"
     },
     "dependencies": {
+        "@types/node-fetch": "^2.6.13",
+        "@types/uuid": "^10.0.0",
         "cors": "^2.8.5",
         "cura-wasm": "^1.5.2",
         "cura-wasm-definitions": "^1.5.1",
         "dotenv": "^16.4.5",
-        "express": "^4.21.2"
+        "express": "^4.21.2",
+        "node-fetch": "^3.3.2",
+        "uuid": "^13.0.0"
     },
     "devDependencies": {
         "@types/cors": "^2.8.17",
