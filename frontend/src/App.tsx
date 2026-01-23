@@ -288,7 +288,8 @@ function App() {
               padding: '0.35rem 0.6rem',
               borderRadius: '8px',
               fontSize: '0.75rem',
-              cursor: 'pointer'
+              cursor: 'pointer',
+              marginTop: '1rem'
             }}
           >
             {aiProvider === 'tripo' ? '🚀 Tripo' : '🆓 Meshy'}
