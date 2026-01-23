@@ -29,7 +29,9 @@ router.post('/save-model', async (req: Request, res: Response) => {
 
         // 1. Download Model
         const modelPath = path.join(MODELS_DIR, modelFilename);
-        const modelRes = await fetch(modelUrl);
+        const modelRes = await fetch(modelUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+        });
         if (!modelRes.ok) throw new Error(`Failed to fetch model: ${modelRes.statusText}`);
         const modelBuffer = await modelRes.buffer();
         fs.writeFileSync(modelPath, modelBuffer);
@@ -39,7 +41,9 @@ router.post('/save-model', async (req: Request, res: Response) => {
         let finalImageUrl = thumbnailUrl;
         if (thumbnailUrl && thumbnailUrl.startsWith('http')) {
             const imagePath = path.join(IMAGES_DIR, imageFilename);
-            const imageRes = await fetch(thumbnailUrl);
+            const imageRes = await fetch(thumbnailUrl, {
+                headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
+            });
             if (imageRes.ok) {
                 const imageBuffer = await imageRes.buffer();
                 fs.writeFileSync(imagePath, imageBuffer);
