@@ -272,7 +272,7 @@ function App() {
         </button>
         <h1>{t('app.title')}</h1>
         <p>{t('app.subtitle')}</p>
-        <div className="header-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem', alignItems: 'flex-end' }}>
+        <div className="header-buttons" style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', alignItems: 'flex-end' }}>
           <button className="lang-toggle" onClick={toggleLanguage}>
             {i18n.language === 'ru' ? '🇬🇧 EN' : '🇷🇺 RU'}
           </button>
