@@ -120,7 +120,8 @@ async function glbToStlBlob(glbUrl: string): Promise<Blob> {
     geometries.forEach(g => g.dispose());
 
     if (stlResult instanceof DataView) {
-        return new Blob([stlResult.buffer], { type: 'model/stl' });
+        // Cast to any to handle three.js version mismatch with ArrayBuffer types
+        return new Blob([stlResult.buffer as any], { type: 'model/stl' });
     }
     return new Blob([stlResult], { type: 'model/stl' });
 }
