@@ -1,7 +1,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import type { SavedModel } from './useSavedModels';
 
-const API_BASE = import.meta.env.VITE_API_URL || '';
+// Production: Direct tunnel URL. Dev: empty for local proxy
+const API_BASE = import.meta.env.DEV ? '' : 'https://voice.xn--b1a5a.fun';
 const PIN_STORAGE_KEY = 'voice-to-matter-pin';
 
 interface UseCloudSyncReturn {
@@ -111,11 +112,8 @@ export function useCloudSync(): UseCloudSyncReturn {
 
             console.log('☁️ Loaded from cloud:', data.models?.length || 0, 'models');
 
-            // Fix legacy URLs
-            return (data.models || []).map((m: SavedModel) => ({
-                ...m,
-                modelUrl: m.modelUrl.replace('https://spotlight-interior-medical-carey.trycloudflare.com', 'http://localhost:3001')
-            }));
+            // Return models as-is (legacy URL fix removed - no longer needed)
+            return data.models || [];
 
         } catch (e) {
             const message = e instanceof Error ? e.message : 'Load failed';

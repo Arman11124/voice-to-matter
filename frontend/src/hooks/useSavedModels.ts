@@ -24,13 +24,7 @@ export function useSavedModels(): UseSavedModelsReturn {
         try {
             const saved = localStorage.getItem(STORAGE_KEY);
             if (!saved) return [];
-
-            // Fix legacy Cloudflare URLs on load
-            const parsed = JSON.parse(saved);
-            return parsed.map((m: any) => ({
-                ...m,
-                modelUrl: m.modelUrl.replace('https://spotlight-interior-medical-carey.trycloudflare.com', 'http://localhost:3001')
-            }));
+            return JSON.parse(saved);
         } catch (e) {
             console.error('Failed to load saved models:', e);
             return [];
@@ -50,9 +44,8 @@ export function useSavedModels(): UseSavedModelsReturn {
         try {
             console.log('💾 Saving persistent model...', prompt);
 
-            // 1. Call backend to download and store files
-            // Use relative path for Vercel, or env var for dev
-            const API_BASE = import.meta.env.VITE_API_URL || '';
+            // Production: Direct tunnel URL. Dev: empty for local proxy
+            const API_BASE = import.meta.env.DEV ? '' : 'https://voice.xn--b1a5a.fun';
 
             const response = await fetch(`${API_BASE}/api/save-model`, {
                 method: 'POST',

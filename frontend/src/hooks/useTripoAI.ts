@@ -1,8 +1,7 @@
 import { useState, useCallback } from 'react';
 
-// Cloudflare Tunnel HTTPS proxy to VPS backend (PM2 managed)
-// Default to empty string (relative path) for Vercel proxy compatibility
-const API_BASE = import.meta.env.VITE_API_URL || '';
+// Production: Direct tunnel URL. Dev: empty for local proxy
+const API_BASE = import.meta.env.DEV ? '' : 'https://voice.xn--b1a5a.fun';
 
 export type GenerationStatus = 'idle' | 'generating' | 'success' | 'error';
 

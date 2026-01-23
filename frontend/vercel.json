@@ -2,15 +2,15 @@
     "rewrites": [
         {
             "source": "/api/:path*",
-            "destination": "https://voice.xn--b1a8a.fun/api/:path*"
+            "destination": "http://157.245.32.26:3001/api/:path*"
         },
         {
             "source": "/models/:path*",
-            "destination": "https://voice.xn--b1a8a.fun/models/:path*"
+            "destination": "http://157.245.32.26:3001/models/:path*"
         },
         {
             "source": "/images/:path*",
-            "destination": "https://voice.xn--b1a8a.fun/images/:path*"
+            "destination": "http://157.245.32.26:3001/images/:path*"
         },
         {
             "source": "/(.*)",

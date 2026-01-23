@@ -2,7 +2,6 @@ import { Router, Request, Response } from 'express';
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';
-import fetch from 'node-fetch';
 
 const router = Router();
 
@@ -27,13 +26,13 @@ router.post('/save-model', async (req: Request, res: Response) => {
 
         console.log(`💾 Saving persistent model: ${prompt} (${id})`);
 
-        // 1. Download Model
+        // 1. Download Model (using native Node.js 20+ fetch)
         const modelPath = path.join(MODELS_DIR, modelFilename);
         const modelRes = await fetch(modelUrl, {
             headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
         });
         if (!modelRes.ok) throw new Error(`Failed to fetch model: ${modelRes.statusText}`);
-        const modelBuffer = await modelRes.buffer();
+        const modelBuffer = Buffer.from(await modelRes.arrayBuffer());
         fs.writeFileSync(modelPath, modelBuffer);
         console.log(`✅ Model saved to ${modelPath}`);
 
@@ -45,7 +44,7 @@ router.post('/save-model', async (req: Request, res: Response) => {
                 headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36' }
             });
             if (imageRes.ok) {
-                const imageBuffer = await imageRes.buffer();
+                const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
                 fs.writeFileSync(imagePath, imageBuffer);
                 console.log(`✅ Image saved to ${imagePath}`);
                 // Construct relative URL
@@ -74,3 +73,4 @@ router.post('/save-model', async (req: Request, res: Response) => {
 });
 
 export const storageRoutes = router;
+
